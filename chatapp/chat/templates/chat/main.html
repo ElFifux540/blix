@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App - Accueil</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            overflow: hidden; 
+        }
+        .header { 
+            background: #007bff; 
+            color: white; 
+            padding: 20px; 
+            text-align: center; 
+        }
+        .nav { 
+            display: flex; 
+            justify-content: space-around; 
+            background: #f8f9fa; 
+            border-bottom: 1px solid #dee2e6; 
+        }
+        .nav button { 
+            padding: 15px 30px; 
+            border: none; 
+            background: none; 
+            cursor: pointer; 
+            font-size: 16px; 
+            transition: background-color 0.3s; 
+        }
+        .nav button:hover, .nav button.active { 
+            background: #007bff; 
+            color: white; 
+        }
+        .content { 
+            padding: 20px; 
+            min-height: 400px; 
+        }
+        .section { 
+            display: none; 
+        }
+        .section.active { 
+            display: block; 
+        }
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+        }
+        .form-group input, .form-group select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            box-sizing: border-box; 
+        }
+        .btn { 
+            background: #007bff; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin-right: 10px; 
+        }
+        .btn:hover { 
+            background: #0056b3; 
+        }
+        .btn-success { 
+            background: #28a745; 
+        }
+        .btn-danger { 
+            background: #dc3545; 
+        }
+        .btn-warning { 
+            background: #ffc107; 
+            color: #212529; 
+        }
+        .list { 
+            max-height: 300px; 
+            overflow-y: auto; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            padding: 10px; 
+        }
+        .list-item { 
+            padding: 10px; 
+            border-bottom: 1px solid #eee; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .list-item:last-child { 
+            border-bottom: none; 
+        }
+        .notification { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            padding: 15px 20px; 
+            border-radius: 5px; 
+            color: white; 
+            font-weight: bold; 
+            z-index: 1000; 
+            display: none; 
+        }
+        .notification.success { 
+            background: #28a745; 
+        }
+        .notification.error { 
+            background: #dc3545; 
+        }
+        .notification.info { 
+            background: #17a2b8; 
+        }
+        .badge { 
+            background: #dc3545; 
+            color: white; 
+            border-radius: 50%; 
+            padding: 2px 6px; 
+            font-size: 12px; 
+            margin-left: 10px; 
+        }
+        .chat-window { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            width: 350px; 
+            height: 400px; 
+            background: white; 
+            border: 1px solid #ddd; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+            display: none; 
+            flex-direction: column; 
+        }
+        .chat-header { 
+            background: #007bff; 
+            color: white; 
+            padding: 15px; 
+            border-radius: 10px 10px 0 0; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .chat-messages { 
+            flex: 1; 
+            padding: 15px; 
+            overflow-y: auto; 
+            max-height: 250px; 
+        }
+        .chat-input { 
+            padding: 15px; 
+            border-top: 1px solid #ddd; 
+            display: flex; 
+        }
+        .chat-input input { 
+            flex: 1; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 20px; 
+            margin-right: 10px; 
+        }
+        .message { 
+            margin-bottom: 10px; 
+            padding: 8px 12px; 
+            border-radius: 15px; 
+            max-width: 80%; 
+        }
+        .message.own { 
+            background: #007bff; 
+            color: white; 
+            margin-left: auto; 
+        }
+        .message.other { 
+            background: #f1f3f4; 
+            color: #333; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💬 Chat App</h1>
+            <p>Bienvenue, <span id="username">{{ user.username }}</span> !</p>
+            <form method="post" action="/accounts/logout/" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" style="background: none; border: none; color: white; text-decoration: underline; cursor: pointer;">Se déconnecter</button>
+            </form>
+        </div>
+        
+        <div class="nav">
+            <button class="nav-btn active" data-section="conversations">💬 Conversations</button>
+            <button class="nav-btn" data-section="contacts">👥 Contacts</button>
+            <button class="nav-btn" data-section="invitations">👥 Groupes</button>
+        </div>
+        
+        <div class="content">
+            <!-- Section Conversations -->
+            <div id="conversations" class="section active">
+                <h2>Mes Conversations</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3>Conversations Privées</h3>
+                    <div id="direct-conversations" class="list"></div>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <select id="contact-select" onchange="selectContact()" style="width: 200px; padding: 8px; margin-right: 10px;">
+                            <option value="">-- Choisir un contact --</option>
+                        </select>
+                        <button class="btn" onclick="createDirectFromContact()">Créer avec ce contact</button>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Section Contacts -->
+            <div id="contacts" class="section">
+                <h2>Gestion des Contacts</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3>Demandes de contact reçues</h3>
+                    <div id="pending-contacts" class="list"></div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3>Mes contacts</h3>
+                    <div id="accepted-contacts" class="list"></div>
+                </div>
+                
+                <div>
+                    <h3>Ajouter un contact</h3>
+                    <div class="form-group">
+                        <input type="text" id="contact-username" placeholder="Nom d'utilisateur">
+                        <button class="btn" onclick="sendContactRequest()">Envoyer une demande</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section Groupes -->
+            <div id="invitations" class="section">
+                <h2>Groupes</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3>Invitations de Groupe</h3>
+                    <div id="pending-invitations" class="list"></div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3>Mes Groupes</h3>
+                    <div id="group-conversations" class="list"></div>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <input type="text" id="group-name" placeholder="Nom du groupe">
+                        <button class="btn" onclick="createGroupConversation()">Créer un groupe</button>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3>Inviter des Utilisateurs</h3>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <select id="group-select" style="width: 200px; padding: 8px; margin-right: 10px;">
+                            <option value="">-- Choisir un groupe --</option>
+                        </select>
+                        <select id="group-invite-select" style="width: 200px; padding: 8px; margin-right: 10px;">
+                            <option value="">-- Choisir un contact --</option>
+                        </select>
+                        <input type="text" id="group-invite-username" placeholder="Ou nom d'utilisateur" style="width: 200px; padding: 8px; margin-right: 10px;">
+                        <button class="btn" onclick="inviteToGroup()">Inviter</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chat Window -->
+    <div id="chat-window" class="chat-window">
+        <div class="chat-header">
+            <span id="chat-title">Chat</span>
+            <button onclick="closeChat()" style="background: none; border: none; color: white; font-size: 20px;">×</button>
+        </div>
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input">
+            <input type="text" id="message-input" placeholder="Tapez votre message..." onkeypress="handleKeyPress(event)">
+            <button class="btn" onclick="sendMessage()">Envoyer</button>
+        </div>
+    </div>
+    
+    <!-- Notifications -->
+    <div id="notification" class="notification"></div>
+    
+    <script>
+        let currentConversation = null;
+        let ws = null;
+        let unreadCounts = {};
+        
+        // Récupérer le token CSRF
+        let csrfToken = null;
+        
+        async function getCSRFToken() {
+            if (csrfToken) return csrfToken;
+            
+            try {
+                const res = await fetch('/api/csrf-token/');
+                const data = await res.json();
+                csrfToken = data.csrfToken;
+                return csrfToken;
+            } catch (error) {
+                console.error('Erreur lors de la récupération du token CSRF:', error);
+                return null;
+            }
+        }
+        
+        // Headers par défaut avec CSRF
+        async function getHeaders() {
+            const token = await getCSRFToken();
+            return {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': token
+            };
+        }
+        
+        // Navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.section).classList.add('active');
+                
+                // Charger les données selon la section
+                if (btn.dataset.section === 'conversations') {
+                    loadConversations();
+                } else if (btn.dataset.section === 'contacts') {
+                    loadContacts();
+                } else if (btn.dataset.section === 'invitations') {
+                    loadInvitations();
+                    loadGroupsForInvite();
+                    loadContactsForGroupInvite();
+                }
+            });
+        });
+        
+        // Charger les conversations
+        async function loadConversations() {
+            try {
+                const headers = await getHeaders();
+                const [directRes, groupRes] = await Promise.all([
+                    fetch('/api/conversations/by-type/?type=direct', {
+                        headers: headers
+                    }),
+                    fetch('/api/conversations/by-type/?type=group', {
+                        headers: headers
+                    })
+                ]);
+                
+                const directConvs = await directRes.json();
+                const groupConvs = await groupRes.json();
+                
+                displayConversations('direct-conversations', directConvs);
+                displayConversations('group-conversations', groupConvs);
+                
+                // Charger aussi les contacts pour la liste déroulante
+                loadContactsForDropdown();
+                // Charger les groupes et contacts pour l'invitation aux groupes
+                loadGroupsForInvite();
+                loadContactsForGroupInvite();
+            } catch (error) {
+                showNotification('Erreur lors du chargement des conversations', 'error');
+            }
+        }
+        
+        function displayConversations(containerId, conversations) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            conversations.forEach(conv => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                
+                // Pour les conversations directes, afficher le nom de l'autre utilisateur
+                let displayName;
+                if (conv.type === 'direct') {
+                    // Récupérer le nom de l'autre utilisateur (pas l'utilisateur actuel)
+                    const otherUser = conv.memberships?.find(m => m.user.id !== {{ user.id }})?.user;
+                    displayName = otherUser ? `Conversation avec ${otherUser.username}` : `Conversation ${conv.id}`;
+                } else {
+                    displayName = conv.name || `Groupe ${conv.id}`;
+                }
+                
+                div.innerHTML = `
+                    <span>${displayName}</span>
+                    <div>
+                        <span class="badge" id="badge-${conv.id}" style="display: none;">0</span>
+                        <button class="btn" onclick="openChat(${conv.id}, '${displayName}')">Ouvrir</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        // Charger les contacts
+        async function loadContacts() {
+            try {
+                const headers = await getHeaders();
+                const [pendingRes, acceptedRes] = await Promise.all([
+                    fetch('/api/contacts/pending/', {
+                        headers: headers
+                    }),
+                    fetch('/api/contacts/accepted/', {
+                        headers: headers
+                    })
+                ]);
+                
+                const pendingContacts = await pendingRes.json();
+                const acceptedContacts = await acceptedRes.json();
+                
+                displayPendingContacts(pendingContacts);
+                displayAcceptedContacts(acceptedContacts);
+            } catch (error) {
+                showNotification('Erreur lors du chargement des contacts', 'error');
+            }
+        }
+        
+        function displayPendingContacts(contacts) {
+            const container = document.getElementById('pending-contacts');
+            container.innerHTML = '';
+            
+            contacts.forEach(contact => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <span>Demande de ${contact.from_user.username}</span>
+                    <div>
+                        <button class="btn btn-success" onclick="respondToContact(${contact.id}, 'accepted')">Accepter</button>
+                        <button class="btn btn-danger" onclick="respondToContact(${contact.id}, 'blocked')">Refuser</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function displayAcceptedContacts(contacts) {
+            const container = document.getElementById('accepted-contacts');
+            container.innerHTML = '';
+            
+            contacts.forEach(contact => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                const otherUser = contact.from_user.username === '{{ user.username }}' ? contact.to_user.username : contact.from_user.username;
+                div.innerHTML = `
+                    <span>${otherUser}</span>
+                    <div>
+                        <button class="btn btn-danger" onclick="deleteContact(${contact.id})" style="background-color: #dc3545; color: white; padding: 4px 8px; font-size: 12px;">Supprimer</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        // Charger les invitations
+        async function loadInvitations() {
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/group-invitations/pending/', {
+                    headers: headers
+                });
+                const invitations = await res.json();
+                
+                displayInvitations(invitations);
+            } catch (error) {
+                showNotification('Erreur lors du chargement des invitations', 'error');
+            }
+        }
+        
+        function displayInvitations(invitations) {
+            const container = document.getElementById('pending-invitations');
+            container.innerHTML = '';
+            
+            invitations.forEach(invitation => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <span>Invitation dans "${invitation.conversation.name}" de ${invitation.from_user.username}</span>
+                    <div>
+                        <button class="btn btn-success" onclick="respondToInvitation(${invitation.id}, 'accepted')">Accepter</button>
+                        <button class="btn btn-danger" onclick="respondToInvitation(${invitation.id}, 'declined')">Refuser</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        // Fonctions de contact
+        async function sendContactRequest() {
+            const username = document.getElementById('contact-username').value;
+            if (!username) return;
+            
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/contacts/send-request/', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({username})
+                });
+                
+                if (res.ok) {
+                    showNotification('Demande envoyée !', 'success');
+                    document.getElementById('contact-username').value = '';
+                } else {
+                    const error = await res.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                showNotification('Erreur lors de l\'envoi', 'error');
+            }
+        }
+
+        async function deleteContact(contactId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce contact ?')) {
+                return;
+            }
+            
+            try {
+                const headers = await getHeaders();
+                const res = await fetch(`/api/contacts/${contactId}/delete/`, {
+                    method: 'DELETE',
+                    headers: headers
+                });
+                
+                if (res.ok) {
+                    showNotification('Contact supprimé !', 'success');
+                    // Recharger la liste des contacts
+                    loadContacts();
+                } else {
+                    const error = await res.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                showNotification('Erreur lors de la suppression', 'error');
+            }
+        }
+        
+        async function respondToContact(contactId, status) {
+            try {
+                const headers = await getHeaders();
+                // Mapper les statuts aux URLs correctes
+                const actionMap = {
+                    'accepted': 'accept',
+                    'blocked': 'decline'
+                };
+                const action = actionMap[status] || status;
+                const res = await fetch(`/api/contacts/${contactId}/${action}/`, {
+                    method: 'POST',
+                    headers: headers
+                });
+                
+                if (res.ok) {
+                    showNotification('Action effectuée !', 'success');
+                    loadContacts();
+                } else {
+                    const error = await res.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                showNotification('Erreur', 'error');
+            }
+        }
+        
+        // Fonctions d'invitation
+        async function respondToInvitation(invitationId, status) {
+            try {
+                const headers = await getHeaders();
+                // Mapper les statuts aux URLs correctes
+                const actionMap = {
+                    'accepted': 'accept',
+                    'declined': 'decline'
+                };
+                const action = actionMap[status] || status;
+                const res = await fetch(`/api/group-invitations/${invitationId}/${action}/`, {
+                    method: 'POST',
+                    headers: headers
+                });
+                
+                if (res.ok) {
+                    showNotification('Action effectuée !', 'success');
+                    loadInvitations();
+                    loadConversations(); // Recharger les conversations
+                } else {
+                    const error = await res.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                showNotification('Erreur', 'error');
+            }
+        }
+        
+        // Fonctions de conversation
+        async function createDirectConversation() {
+            const username = document.getElementById('direct-username').value;
+            if (!username) return;
+            
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/conversations/create-direct-by-username/', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({username})
+                });
+                
+                if (res.ok) {
+                    showNotification('Conversation créée !', 'success');
+                    document.getElementById('direct-username').value = '';
+                    loadConversations();
+                } else {
+                    const error = await res.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                showNotification('Erreur lors de la création', 'error');
+            }
+        }
+        
+        async function createGroupConversation() {
+            const name = document.getElementById('group-name').value;
+            if (!name) return;
+            
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/conversations/create-group/', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({name})
+                });
+                
+                if (res.ok) {
+                    showNotification('Groupe créé !', 'success');
+                    document.getElementById('group-name').value = '';
+                    loadConversations();
+                } else {
+                    const error = await res.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                showNotification('Erreur lors de la création', 'error');
+            }
+        }
+        
+        // Fonctions de chat
+        function openChat(conversationId, title) {
+            currentConversation = conversationId;
+            document.getElementById('chat-title').textContent = title;
+            document.getElementById('chat-window').style.display = 'flex';
+            
+            // Fermer la connexion WebSocket précédente
+            if (ws) {
+                ws.close();
+            }
+            
+            // Nouvelle connexion WebSocket
+            const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+            ws = new WebSocket(`${protocol}://${window.location.host}/ws/chat/${conversationId}/`);
+            
+            ws.onopen = () => {
+                console.log('Connecté au chat');
+                loadMessages();
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.message) {
+                    displayMessage(data.message);
+                } else if (data.error) {
+                    showNotification(data.error, 'error');
+                }
+            };
+            
+            ws.onclose = () => {
+                console.log('Déconnecté du chat');
+            };
+        }
+        
+        function closeChat() {
+            document.getElementById('chat-window').style.display = 'none';
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            currentConversation = null;
+        }
+        
+        async function loadMessages() {
+            try {
+                const headers = await getHeaders();
+                const res = await fetch(`/api/conversations/${currentConversation}/messages/`, {
+                    headers: headers
+                });
+                const messages = await res.json();
+                
+                const container = document.getElementById('chat-messages');
+                container.innerHTML = '';
+                messages.forEach(msg => displayMessage(msg));
+            } catch (error) {
+                showNotification('Erreur lors du chargement des messages', 'error');
+            }
+        }
+        
+        function displayMessage(msg) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `message ${msg.sender === {{ user.id }} ? 'own' : 'other'}`;
+            
+            // Gérer l'affichage du nom d'utilisateur
+            let senderName = 'Utilisateur';
+            if (msg.sender_username) {
+                senderName = msg.sender_username;
+            } else if (msg.sender && typeof msg.sender === 'object' && msg.sender.username) {
+                senderName = msg.sender.username;
+            } else if (msg.sender && typeof msg.sender === 'string') {
+                senderName = msg.sender;
+            }
+            
+            div.innerHTML = `
+                <strong>${senderName}:</strong> ${msg.content}
+                <br><small>${new Date(msg.created_at).toLocaleTimeString()}</small>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            ws.send(JSON.stringify({message}));
+            input.value = '';
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Récupérer le token CSRF au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            // Récupérer le token CSRF depuis le cookie
+            const csrfToken = getCSRFToken();
+            if (!csrfToken) {
+                console.warn('Token CSRF non trouvé');
+            }
+        });
+        
+        // Charger les données au démarrage
+        // Fonctions pour la liste déroulante des contacts
+        async function loadContactsForDropdown() {
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/contacts/accepted/', {
+                    headers: headers
+                });
+                
+                if (res.ok) {
+                    const contacts = await res.json();
+                    const select = document.getElementById('contact-select');
+                    select.innerHTML = '<option value="">-- Choisir un contact --</option>';
+                    
+                    contacts.forEach(contact => {
+                        const option = document.createElement('option');
+                        option.value = contact.to_user.username;
+                        option.textContent = contact.to_user.username;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des contacts:', error);
+            }
+        }
+        
+        // Fonction pour charger les groupes pour l'invitation
+        async function loadGroupsForInvite() {
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/conversations/by-type/?type=group', {
+                    headers: headers
+                });
+                
+                if (res.ok) {
+                    const groups = await res.json();
+                    const select = document.getElementById('group-select');
+                    select.innerHTML = '<option value="">-- Choisir un groupe --</option>';
+                    
+                    groups.forEach(group => {
+                        const option = document.createElement('option');
+                        option.value = group.id;
+                        option.textContent = group.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des groupes:', error);
+            }
+        }
+        
+        // Fonction pour charger les contacts pour l'invitation aux groupes
+        async function loadContactsForGroupInvite() {
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/contacts/accepted/', {
+                    headers: headers
+                });
+                
+                if (res.ok) {
+                    const contacts = await res.json();
+                    const select = document.getElementById('group-invite-select');
+                    select.innerHTML = '<option value="">-- Choisir un contact --</option>';
+                    
+                    contacts.forEach(contact => {
+                        const option = document.createElement('option');
+                        option.value = contact.to_user.username;
+                        option.textContent = contact.to_user.username;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des contacts:', error);
+            }
+        }
+        
+        function selectContact() {
+            const select = document.getElementById('contact-select');
+            const usernameInput = document.getElementById('direct-username');
+            if (select.value) {
+                usernameInput.value = select.value;
+            }
+        }
+        
+        async function createDirectFromContact() {
+            const select = document.getElementById('contact-select');
+            if (!select.value) {
+                showNotification('Veuillez sélectionner un contact', 'error');
+                return;
+            }
+            
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/conversations/create-direct-by-username/', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ username: select.value })
+                });
+                
+                if (res.ok) {
+                    const conversation = await res.json();
+                    showNotification('Conversation créée !', 'success');
+                    loadConversations();
+                    select.value = ''; // Reset selection
+                } else {
+                    const error = await res.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                showNotification('Erreur lors de la création', 'error');
+            }
+        }
+        
+        // Fonction pour inviter des utilisateurs aux groupes
+        async function inviteToGroup() {
+            const groupSelect = document.getElementById('group-select');
+            const contactSelect = document.getElementById('group-invite-select');
+            const usernameInput = document.getElementById('group-invite-username');
+            
+            const groupId = groupSelect.value;
+            const username = contactSelect.value || usernameInput.value;
+            
+            if (!groupId) {
+                showNotification('Veuillez sélectionner un groupe', 'error');
+                return;
+            }
+            
+            if (!username) {
+                showNotification('Veuillez sélectionner un contact ou entrer un nom d\'utilisateur', 'error');
+                return;
+            }
+            
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/group-invitations/invite/', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ 
+                        username: username,
+                        conversation_id: groupId
+                    })
+                });
+                
+                if (res.ok) {
+                    showNotification('Invitation envoyée !', 'success');
+                    contactSelect.value = '';
+                    usernameInput.value = '';
+                } else {
+                    const error = await res.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                showNotification('Erreur lors de l\'envoi de l\'invitation', 'error');
+            }
+        }
+
+        loadConversations();
+    </script>
+</body>
+</html>

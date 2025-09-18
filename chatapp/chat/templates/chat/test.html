@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Chat Django Channels</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    #messages { border: 1px solid #ccc; padding: 1rem; height: 300px; overflow-y: scroll; }
+    #input { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Test Chat</h1>
+  
+  <label>Nom de la room : </label>
+  <input type="text" id="room" value="testroom">
+  <button id="connectBtn">Connecter</button>
+
+  <div id="messages"></div>
+
+  <div id="input" style="display:none;">
+    <input type="text" id="messageInput" placeholder="Écris ton message">
+    <button id="sendBtn">Envoyer</button>
+  </div>
+
+  <script>
+    let ws;
+
+    document.getElementById("connectBtn").onclick = () => {
+      const room = document.getElementById("room").value;
+      // ⚡ Protocole automatique selon HTTPS ou HTTP
+      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+      ws = new WebSocket(`${protocol}://${window.location.host}/ws/chat/${room}/`);
+
+      ws.onopen = () => {
+        appendMessage("✅ Connecté à la room " + room);
+        document.getElementById("input").style.display = "block";
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.message) {
+          const msg = data.message;
+          appendMessage(`💬 [${msg.sender}] ${msg.content} (${new Date(msg.created_at).toLocaleTimeString()})`);
+        }
+      };
+
+      ws.onclose = () => {
+        appendMessage("❌ Déconnecté");
+      };
+    };
+
+    document.getElementById("sendBtn").onclick = () => {
+      const msgInput = document.getElementById("messageInput");
+      const message = msgInput.value;
+      if (message && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({message: message}));
+        msgInput.value = "";
+      }
+    };
+
+    function appendMessage(msg) {
+      const div = document.createElement("div");
+      div.textContent = msg;
+      document.getElementById("messages").appendChild(div);
+      document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+    }
+  </script>
+</body>
+</html>
