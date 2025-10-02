@@ -5,54 +5,120 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat App - Accueil</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background-color: #f5f5f5; 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1e1f22; /* Discord-ish dark */
+            color: #e3e5e8;
         }
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            background: white; 
-            border-radius: 10px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-            overflow: hidden; 
+        .app-shell {
+            display: grid;
+            grid-template-columns: 72px 280px 1fr;
+            grid-template-rows: 48px 1fr;
+            grid-template-areas:
+                "header header header"
+                "servers channels main";
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
         }
-        .header { 
-            background: #007bff; 
-            color: white; 
-            padding: 20px; 
-            text-align: center; 
+        .header {
+            grid-area: header;
+            background: #2b2d31;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.2);
         }
-        .nav { 
-            display: flex; 
-            justify-content: space-around; 
-            background: #f8f9fa; 
-            border-bottom: 1px solid #dee2e6; 
+        .servers-rail {
+            grid-area: servers;
+            background: #1f2124;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 8px;
+            overflow-y: auto;
         }
-        .nav button { 
-            padding: 15px 30px; 
-            border: none; 
-            background: none; 
-            cursor: pointer; 
-            font-size: 16px; 
-            transition: background-color 0.3s; 
+        .server-bubble {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #313338;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e3e5e8;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.15s ease;
+            user-select: none;
         }
-        .nav button:hover, .nav button.active { 
-            background: #007bff; 
-            color: white; 
+        .server-bubble:hover { transform: translateY(-1px); background: #3a3c41; }
+        .server-bubble.active { background: #5865f2; }
+        .server-bubble .badge { position: absolute; margin-left: 28px; }
+
+        .channels-pane {
+            grid-area: channels;
+            background: #2b2d31;
+            border-right: 1px solid #202225;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
         }
-        .content { 
-            padding: 20px; 
-            min-height: 400px; 
+        .channels-header {
+            padding: 12px;
+            font-weight: bold;
+            border-bottom: 1px solid #202225;
         }
-        .section { 
-            display: none; 
+        .channel-list { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 8px; }
+        .channel-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #c7c9ce;
         }
-        .section.active { 
-            display: block; 
+        .channel-item:hover, .channel-item.active { background: #3a3c41; color: #fff; }
+
+        .main-pane {
+            grid-area: main;
+            background: #313338;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
+        .main-header { padding: 12px 16px; border-bottom: 1px solid #202225; font-weight: bold; }
+        .messages { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 16px; }
+        .composer { padding: 12px 16px; border-top: 1px solid #202225; display: flex; gap: 8px; }
+        .composer input { flex: 1; background: #1e1f22; border: 1px solid #3a3c41; border-radius: 8px; color: #fff; padding: 10px 12px; }
+        .btn { background: #5865f2; color: white; padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; }
+        .btn:hover { filter: brightness(1.05); }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: block;
+            width: fit-content;
+            max-width: 90%;
+            min-width: 30%;
+            overflow-wrap: anywhere;
+        }
+        .message.own { background: #5865f2; color: #fff; margin-left: auto; margin-right: 0; }
+        .message.other { background: #1f2124; color: #e3e5e8; margin-left: 0; margin-right: auto; }
+
+        .notification {
+            position: fixed; top: 20px; right: 20px; padding: 15px 20px; border-radius: 5px; color: white; font-weight: bold; z-index: 1000; display: none;
+        }
+        .notification.success { background: #28a745; }
+        .notification.error { background: #dc3545; }
+        .notification.info { background: #17a2b8; }
         .form-group { 
             margin-bottom: 15px; 
         }
@@ -175,127 +241,64 @@
             border-radius: 20px; 
             margin-right: 10px; 
         }
-        .message { 
-            margin-bottom: 10px; 
-            padding: 8px 12px; 
-            border-radius: 15px; 
-            max-width: 80%; 
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 15px;
+            display: block;
+            width: fit-content;
+            max-width: 90%;
+            min-width: 30%;
+            overflow-wrap: anywhere;
         }
-        .message.own { 
-            background: #007bff; 
-            color: white; 
-            margin-left: auto; 
+        .message.own {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+            margin-right: 0;
         }
-        .message.other { 
-            background: #f1f3f4; 
-            color: #333; 
+        .message.other {
+            background: #f1f3f4;
+            color: #333;
+            margin-left: 0;
+            margin-right: auto;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="app-shell">
         <div class="header">
-            <h1>💬 Chat App</h1>
-            <p>Bienvenue, <span id="username">{{ user.username }}</span> !</p>
-            <form method="post" action="/accounts/logout/" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" style="background: none; border: none; color: white; text-decoration: underline; cursor: pointer;">Se déconnecter</button>
-            </form>
-        </div>
-        
-        <div class="nav">
-            <button class="nav-btn active" data-section="conversations">💬 Conversations</button>
-            <button class="nav-btn" data-section="contacts">👥 Contacts</button>
-            <button class="nav-btn" data-section="invitations">👥 Groupes</button>
-        </div>
-        
-        <div class="content">
-            <!-- Section Conversations -->
-            <div id="conversations" class="section active">
-                <h2>Mes Conversations</h2>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3>Conversations Privées</h3>
-                    <div id="direct-conversations" class="list"></div>
-                    <div class="form-group" style="margin-top: 10px;">
-                        <select id="contact-select" onchange="selectContact()" style="width: 200px; padding: 8px; margin-right: 10px;">
-                            <option value="">-- Choisir un contact --</option>
-                        </select>
-                        <button class="btn" onclick="createDirectFromContact()">Créer avec ce contact</button>
-                    </div>
-                </div>
-                
-            </div>
-            
-            <!-- Section Contacts -->
-            <div id="contacts" class="section">
-                <h2>Gestion des Contacts</h2>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3>Demandes de contact reçues</h3>
-                    <div id="pending-contacts" class="list"></div>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3>Mes contacts</h3>
-                    <div id="accepted-contacts" class="list"></div>
-                </div>
-                
-                <div>
-                    <h3>Ajouter un contact</h3>
-                    <div class="form-group">
-                        <input type="text" id="contact-username" placeholder="Nom d'utilisateur">
-                        <button class="btn" onclick="sendContactRequest()">Envoyer une demande</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section Groupes -->
-            <div id="invitations" class="section">
-                <h2>Groupes</h2>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3>Invitations de Groupe</h3>
-                    <div id="pending-invitations" class="list"></div>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3>Mes Groupes</h3>
-                    <div id="group-conversations" class="list"></div>
-                    <div class="form-group" style="margin-top: 10px;">
-                        <input type="text" id="group-name" placeholder="Nom du groupe">
-                        <button class="btn" onclick="createGroupConversation()">Créer un groupe</button>
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3>Inviter des Utilisateurs</h3>
-                    <div class="form-group" style="margin-top: 10px;">
-                        <select id="group-select" style="width: 200px; padding: 8px; margin-right: 10px;">
-                            <option value="">-- Choisir un groupe --</option>
-                        </select>
-                        <select id="group-invite-select" style="width: 200px; padding: 8px; margin-right: 10px;">
-                            <option value="">-- Choisir un contact --</option>
-                        </select>
-                        <input type="text" id="group-invite-username" placeholder="Ou nom d'utilisateur" style="width: 200px; padding: 8px; margin-right: 10px;">
-                        <button class="btn" onclick="inviteToGroup()">Inviter</button>
-                    </div>
-                </div>
+            <div>💬 Chat App</div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span>Bienvenue, <strong id="username">{{ user.username }}</strong></span>
+                <form method="post" action="/accounts/logout/" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" style="background: none; border: none; color: #e3e5e8; text-decoration: underline; cursor: pointer;">Se déconnecter</button>
+                </form>
             </div>
         </div>
-    </div>
-    
-    <!-- Chat Window -->
-    <div id="chat-window" class="chat-window">
-        <div class="chat-header">
-            <span id="chat-title">Chat</span>
-            <button onclick="closeChat()" style="background: none; border: none; color: white; font-size: 20px;">×</button>
-        </div>
-        <div id="chat-messages" class="chat-messages"></div>
-        <div class="chat-input">
-            <input type="text" id="message-input" placeholder="Tapez votre message..." onkeypress="handleKeyPress(event)">
-            <button class="btn" onclick="sendMessage()">Envoyer</button>
-        </div>
+
+        <aside class="servers-rail" id="servers-rail">
+            <div class="server-bubble" id="server-menu" title="Menus" onclick="selectServer('menus')">≡</div>
+            <div class="server-bubble active" id="server-direct" title="Privés" onclick="selectServer('direct')">💬</div>
+            <div class="server-bubble" id="server-groups" title="Groupes" onclick="selectServer('groups')">👥</div>
+        </aside>
+
+        <section class="channels-pane">
+            <div class="channels-header" id="channels-title">Conversations</div>
+            <div class="channel-list" id="channel-list"></div>
+            <div style="padding:12px; border-top:1px solid #202225;" id="channels-actions"></div>
+        </section>
+
+        <main class="main-pane">
+            <div class="main-header" id="main-title">Sélectionnez une conversation</div>
+            <div class="messages" id="chat-messages"></div>
+            <div class="composer">
+                <input type="file" id="file-input" style="max-width: 260px;" />
+                <input type="text" id="message-input" placeholder="Tapez votre message..." onkeypress="handleKeyPress(event)">
+                <button class="btn" onclick="sendMessage()">Envoyer</button>
+            </div>
+        </main>
     </div>
     
     <!-- Notifications -->
@@ -332,26 +335,16 @@
             };
         }
         
-        // Navigation
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(btn.dataset.section).classList.add('active');
-                
-                // Charger les données selon la section
-                if (btn.dataset.section === 'conversations') {
-                    loadConversations();
-                } else if (btn.dataset.section === 'contacts') {
-                    loadContacts();
-                } else if (btn.dataset.section === 'invitations') {
-                    loadInvitations();
-                    loadGroupsForInvite();
-                    loadContactsForGroupInvite();
-                }
-            });
-        });
+        // État de la colonne de gauche (rail + channels)
+        let currentServer = 'direct'; // 'menus' | 'direct' | 'groups'
+        function selectServer(kind) {
+            currentServer = kind;
+            document.querySelectorAll('.server-bubble').forEach(b => b.classList.remove('active'));
+            if (kind === 'menus') document.getElementById('server-menu').classList.add('active');
+            if (kind === 'direct') document.getElementById('server-direct').classList.add('active');
+            if (kind === 'groups') document.getElementById('server-groups').classList.add('active');
+            renderChannels();
+        }
         
         // Charger les conversations
         async function loadConversations() {
@@ -369,8 +362,9 @@
                 const directConvs = await directRes.json();
                 const groupConvs = await groupRes.json();
                 
-                displayConversations('direct-conversations', directConvs);
-                displayConversations('group-conversations', groupConvs);
+                window.__directConvs = directConvs;
+                window.__groupConvs = groupConvs;
+                renderChannels();
                 
                 // Charger aussi les contacts pour la liste déroulante
                 loadContactsForDropdown();
@@ -382,33 +376,75 @@
             }
         }
         
-        function displayConversations(containerId, conversations) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
-            
-            conversations.forEach(conv => {
-                const div = document.createElement('div');
-                div.className = 'list-item';
-                
-                // Pour les conversations directes, afficher le nom de l'autre utilisateur
-                let displayName;
-                if (conv.type === 'direct') {
-                    // Récupérer le nom de l'autre utilisateur (pas l'utilisateur actuel)
+        function renderChannels() {
+            const list = document.getElementById('channel-list');
+            const actions = document.getElementById('channels-actions');
+            const title = document.getElementById('channels-title');
+            list.innerHTML = '';
+            actions.innerHTML = '';
+            if (currentServer === 'menus') {
+                title.textContent = 'Menus';
+                // Menus: Contacts + Invitations
+                const menus = [
+                    { id: 'menu-contacts', label: 'Contacts', onClick: () => loadContactsPanel() },
+                    { id: 'menu-invitations', label: 'Invitations', onClick: () => loadInvitationsPanel() }
+                ];
+                menus.forEach(menu => {
+                    const item = document.createElement('div');
+                    item.className = 'channel-item';
+                    item.textContent = menu.label;
+                    item.onclick = menu.onClick;
+                    list.appendChild(item);
+                });
+            } else if (currentServer === 'direct') {
+                title.textContent = 'Conversations privées';
+                (window.__directConvs || []).forEach(conv => {
                     const otherUser = conv.memberships?.find(m => m.user.id !== {{ user.id }})?.user;
-                    displayName = otherUser ? `Conversation avec ${otherUser.username}` : `Conversation ${conv.id}`;
-                } else {
-                    displayName = conv.name || `Groupe ${conv.id}`;
-                }
-                
-                div.innerHTML = `
-                    <span>${displayName}</span>
-                    <div>
-                        <span class="badge" id="badge-${conv.id}" style="display: none;">0</span>
-                        <button class="btn" onclick="openChat(${conv.id}, '${displayName}')">Ouvrir</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
+                    const displayName = otherUser ? otherUser.username : `Direct ${conv.id}`;
+                    const item = document.createElement('div');
+                    item.className = 'channel-item';
+                    item.innerHTML = `<span>@ ${displayName}</span><span class="badge" id="badge-${conv.id}" style="display:none;">0</span>`;
+                    item.onclick = () => openChat(conv.id, displayName);
+                    list.appendChild(item);
+                });
+                // Action: créer direct
+                const actionsHtml = `
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <select id="contact-select" style="flex:1; background:#1e1f22; color:#e3e5e8; border:1px solid #3a3c41; border-radius:8px; padding:8px;">
+                            <option value="">-- Choisir un contact --</option>
+                        </select>
+                        <button class="btn" onclick="createDirectFromContact()">Créer</button>
+                    </div>`;
+                actions.innerHTML = actionsHtml;
+            } else if (currentServer === 'groups') {
+                title.textContent = 'Groupes';
+                (window.__groupConvs || []).forEach(conv => {
+                    const displayName = conv.name || `Groupe ${conv.id}`;
+                    const item = document.createElement('div');
+                    item.className = 'channel-item';
+                    item.innerHTML = `<span># ${displayName}</span><span class="badge" id="badge-${conv.id}" style="display:none;">0</span>`;
+                    item.onclick = () => openChat(conv.id, displayName);
+                    list.appendChild(item);
+                });
+                const actionsHtml = `
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="group-name" placeholder="Nom du groupe" style="flex:1; background:#1e1f22; color:#e3e5e8; border:1px solid #3a3c41; border-radius:8px; padding:8px;">
+                            <button class="btn" onclick="createGroupConversation()">Créer</button>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <select id="group-select" style="flex:1; background:#1e1f22; color:#e3e5e8; border:1px solid #3a3c41; border-radius:8px; padding:8px;">
+                                <option value="">-- Choisir un groupe --</option>
+                            </select>
+                            <select id="group-invite-select" style="flex:1; background:#1e1f22; color:#e3e5e8; border:1px solid #3a3c41; border-radius:8px; padding:8px;">
+                                <option value="">-- Choisir un contact --</option>
+                            </select>
+                            <input type="text" id="group-invite-username" placeholder="Ou nom d'utilisateur" style="flex:1; background:#1e1f22; color:#e3e5e8; border:1px solid #3a3c41; border-radius:8px; padding:8px;">
+                            <button class="btn" onclick="inviteToGroup()">Inviter</button>
+                        </div>
+                    </div>`;
+                actions.innerHTML = actionsHtml;
+            }
         }
         
         // Charger les contacts
@@ -661,8 +697,7 @@
         // Fonctions de chat
         function openChat(conversationId, title) {
             currentConversation = conversationId;
-            document.getElementById('chat-title').textContent = title;
-            document.getElementById('chat-window').style.display = 'flex';
+            document.getElementById('main-title').textContent = title;
             
             // Fermer la connexion WebSocket précédente
             if (ws) {
@@ -693,12 +728,10 @@
         }
         
         function closeChat() {
-            document.getElementById('chat-window').style.display = 'none';
-            if (ws) {
-                ws.close();
-                ws = null;
-            }
+            if (ws) { ws.close(); ws = null; }
             currentConversation = null;
+            document.getElementById('main-title').textContent = 'Sélectionnez une conversation';
+            document.getElementById('chat-messages').innerHTML = '';
         }
         
         async function loadMessages() {
@@ -709,7 +742,7 @@
                 });
                 const messages = await res.json();
                 
-                const container = document.getElementById('chat-messages');
+            const container = document.getElementById('chat-messages');
                 container.innerHTML = '';
                 messages.forEach(msg => displayMessage(msg));
             } catch (error) {
@@ -717,10 +750,18 @@
             }
         }
         
+        function isImageFile(filename) {
+            if (!filename) return false;
+            const lower = filename.toLowerCase();
+            return [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"].some(ext => lower.endsWith(ext));
+        }
+
         function displayMessage(msg) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
-            div.className = `message ${msg.sender === {{ user.id }} ? 'own' : 'other'}`;
+            const senderId = (msg.sender && typeof msg.sender === 'object' && msg.sender.id) ? msg.sender.id : (typeof msg.sender === 'number' ? msg.sender : null);
+            const isOwn = senderId === {{ user.id }};
+            div.className = `message ${isOwn ? 'own' : 'other'}`;
             
             // Gérer l'affichage du nom d'utilisateur
             let senderName = 'Utilisateur';
@@ -732,19 +773,62 @@
                 senderName = msg.sender;
             }
             
+            let attachmentHtml = '';
+            const url = msg.attachment_url;
+            if (url) {
+                if (isImageFile(url)) {
+                    attachmentHtml = `<div style="margin-top:6px;"><img src="${url}" alt="fichier" style="max-width: 320px; border-radius: 6px;" /></div>`;
+                } else {
+                    const filename = url.split('/').pop();
+                    attachmentHtml = `<div style="margin-top:6px;"><a href="${url}" target="_blank" download rel="noopener">📎 Télécharger ${filename}</a></div>`;
+                }
+            }
+
             div.innerHTML = `
-                <strong>${senderName}:</strong> ${msg.content}
+                <strong>${senderName}:</strong> ${msg.content || ''}
+                ${attachmentHtml}
                 <br><small>${new Date(msg.created_at).toLocaleTimeString()}</small>
             `;
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
         }
         
-        function sendMessage() {
+        async function sendMessage() {
             const input = document.getElementById('message-input');
-            const message = input.value.trim();
+            const fileInput = document.getElementById('file-input');
+            const message = (input.value || '').trim();
+            const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+            if (!currentConversation) return;
+
+            // Si un fichier est présent, on utilise l'API REST (multipart)
+            if (file) {
+                try {
+                    const token = await getCSRFToken();
+                    const form = new FormData();
+                    form.append('content', message);
+                    form.append('attachment', file);
+                    const res = await fetch(`/api/conversations/${currentConversation}/send/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': token },
+                        body: form
+                    });
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        showNotification(err.detail || 'Erreur envoi du fichier', 'error');
+                        return;
+                    }
+                    // La diffusion temps réel arrivera via WebSocket (broadcast côté serveur)
+                    input.value = '';
+                    fileInput.value = '';
+                } catch (e) {
+                    showNotification('Erreur réseau lors de l\'upload', 'error');
+                }
+                return;
+            }
+
+            // Sinon, on garde le flux WebSocket pour le texte seul
             if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
-            
             ws.send(JSON.stringify({message}));
             input.value = '';
         }
@@ -768,14 +852,43 @@
         
         // Récupérer le token CSRF au chargement
         document.addEventListener('DOMContentLoaded', function() {
-            // Récupérer le token CSRF depuis le cookie
-            const csrfToken = getCSRFToken();
-            if (!csrfToken) {
-                console.warn('Token CSRF non trouvé');
-            }
+            getCSRFToken();
+            loadConversations();
         });
         
-        // Charger les données au démarrage
+        // Panneaux menus -> affichage dans la zone principale
+        function loadContactsPanel() {
+            document.getElementById('main-title').textContent = 'Contacts';
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+            // Récupérer et afficher
+            loadContacts().then(() => {
+                const pending = document.getElementById('pending-contacts');
+                const accepted = document.getElementById('accepted-contacts');
+            });
+            // Construire un mini rendu simple ici
+            container.innerHTML = `
+                <div>
+                    <h3>Demandes reçues</h3>
+                    <div id="pending-contacts" class="messages"></div>
+                    <h3>Mes contacts</h3>
+                    <div id="accepted-contacts" class="messages"></div>
+                    <div style="display:flex; gap:8px; margin-top:12px;">
+                        <input type="text" id="contact-username" placeholder="Nom d'utilisateur" style="flex:1; background:#1e1f22; color:#e3e5e8; border:1px solid #3a3c41; border-radius:8px; padding:8px;">
+                        <button class="btn" onclick="sendContactRequest()">Ajouter</button>
+                    </div>
+                </div>`;
+        }
+
+        function loadInvitationsPanel() {
+            document.getElementById('main-title').textContent = 'Invitations de groupe';
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = `
+                <div>
+                    <div id="pending-invitations" class="messages"></div>
+                </div>`;
+            loadInvitations();
+        }
         // Fonctions pour la liste déroulante des contacts
         async function loadContactsForDropdown() {
             try {
@@ -930,8 +1043,15 @@
                 showNotification('Erreur lors de l\'envoi de l\'invitation', 'error');
             }
         }
-
-        loadConversations();
+        // Helpers pour rafraîchir les sélecteurs quand nécessaire
+        function refreshSelectors() {
+            if (currentServer === 'direct') {
+                loadContactsForDropdown();
+            } else if (currentServer === 'groups') {
+                loadGroupsForInvite();
+                loadContactsForGroupInvite();
+            }
+        }
     </script>
 </body>
 </html>

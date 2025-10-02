@@ -3,6 +3,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action, api_view
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -22,6 +23,7 @@ class IsAuthenticated(permissions.IsAuthenticated):
 class ConversationViewSet(viewsets.ModelViewSet):
 	permission_classes = [IsAuthenticated]
 	serializer_class = ConversationSerializer
+	parser_classes = (MultiPartParser, FormParser, JSONParser)
 
 	def get_queryset(self):
 		return Conversation.objects.filter(memberships__user=self.request.user).distinct()
@@ -93,10 +95,11 @@ class ConversationViewSet(viewsets.ModelViewSet):
 						"detail": "Impossible d'envoyer un message : vous n'êtes plus en contact avec cet utilisateur"
 					}, status=status.HTTP_403_FORBIDDEN)
 		
-		content = request.data.get("content", "").strip()
-		if not content:
-			return Response({"detail": "content requis"}, status=status.HTTP_400_BAD_REQUEST)
-		message = Message.objects.create(conversation=conversation, sender=request.user, content=content)
+		content = (request.data.get("content", "") or "").strip()
+		attachment = request.FILES.get("attachment")
+		if not content and not attachment:
+			return Response({"detail": "content ou attachment requis"}, status=status.HTTP_400_BAD_REQUEST)
+		message = Message.objects.create(conversation=conversation, sender=request.user, content=content, attachment=attachment)
 		# Notify via channel layer group
 		from asgiref.sync import async_to_sync
 		from channels.layers import get_channel_layer

@@ -29,11 +29,23 @@ class ConversationSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
 	sender = UserSerializer(read_only=True)
 	sender_username = serializers.CharField(source='sender.username', read_only=True)
+	attachment = serializers.FileField(required=False, allow_null=True)
+	attachment_url = serializers.SerializerMethodField()
 
 	class Meta:
 		model = Message
-		fields = ("id", "conversation", "sender", "sender_username", "content", "created_at")
+		fields = ("id", "conversation", "sender", "sender_username", "content", "attachment", "attachment_url", "created_at")
 		read_only_fields = ("sender", "sender_username", "created_at")
+
+	def get_attachment_url(self, obj):
+		try:
+			if obj.attachment and hasattr(obj.attachment, 'url'):
+				request = self.context.get('request')
+				url = obj.attachment.url
+				return request.build_absolute_uri(url) if request else url
+		except Exception:
+			return None
+		return None
 
 
 class ContactSerializer(serializers.ModelSerializer):
