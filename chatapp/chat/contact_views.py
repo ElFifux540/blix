@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .models import Contact, GroupInvitation, Conversation, Membership
 from .serializers import ContactSerializer, GroupInvitationSerializer, ConversationSerializer
+from .notification_views import create_contact_notification, create_group_invitation_notification
 
 User = get_user_model()
 
@@ -52,6 +53,10 @@ class ContactViewSet(viewsets.ModelViewSet):
             to_user=target_user,
             status='pending'
         )
+        
+        # Créer une notification pour le destinataire
+        create_contact_notification(target_user, contact)
+        
         return Response(ContactSerializer(contact).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="accept")
@@ -154,6 +159,10 @@ class GroupInvitationViewSet(viewsets.ModelViewSet):
             to_user=target_user,
             status='pending'
         )
+        
+        # Créer une notification pour le destinataire
+        create_group_invitation_notification(target_user, invitation)
+        
         return Response(GroupInvitationSerializer(invitation).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="accept")

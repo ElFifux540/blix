@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Conversation, Membership, Message, Contact, GroupInvitation
+from .models import Conversation, Membership, Message, Contact, GroupInvitation, Notification
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -67,5 +67,19 @@ class GroupInvitationSerializer(serializers.ModelSerializer):
 		model = GroupInvitation
 		fields = ("id", "conversation", "conversation_name", "from_user", "to_user", "status", "created_at", "updated_at")
 		read_only_fields = ("from_user", "created_at", "updated_at")
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+	conversation_name = serializers.CharField(source='conversation.name', read_only=True)
+	
+	class Meta:
+		model = Notification
+		fields = ("id", "type", "title", "content", "conversation", "conversation_name", "read", "created_at")
+		read_only_fields = ("created_at",)
+		
+	def create(self, validated_data):
+		# L'utilisateur est automatiquement défini depuis le contexte de la requête
+		validated_data['user'] = self.context['request'].user
+		return super().create(validated_data)
 
 

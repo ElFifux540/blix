@@ -10,9 +10,11 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.middleware.csrf import get_token
 from django.http import JsonResponse
+from datetime import datetime, timezone as dt_timezone
 
 from .models import Conversation, Membership, Message, Contact
 from .serializers import ConversationSerializer, MessageSerializer
+from .notification_views import create_message_notification
 
 
 class IsAuthenticated(permissions.IsAuthenticated):
@@ -100,6 +102,17 @@ class ConversationViewSet(viewsets.ModelViewSet):
 		if not content and not attachment:
 			return Response({"detail": "content ou attachment requis"}, status=status.HTTP_400_BAD_REQUEST)
 		message = Message.objects.create(conversation=conversation, sender=request.user, content=content, attachment=attachment)
+		
+		# Créer des notifications pour les autres membres de la conversation
+		other_members = Membership.objects.filter(conversation=conversation).exclude(user=request.user)
+		for membership in other_members:
+			create_message_notification(
+				user=membership.user,
+				conversation=conversation,
+				sender_username=request.user.username,
+				message_content=content or "Fichier partagé"
+			)
+		
 		# Notify via channel layer group
 		from asgiref.sync import async_to_sync
 		from channels.layers import get_channel_layer
@@ -126,7 +139,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
 		qs = Membership.objects.filter(user=request.user).select_related("conversation")
 		counts = {}
 		for mem in qs:
-			last_ts = mem.last_read_at or timezone.datetime.fromtimestamp(0, tz=timezone.utc)
+			last_ts = mem.last_read_at or datetime.fromtimestamp(0, tz=dt_timezone.utc)
 			counts[mem.conversation_id] = Message.objects.filter(conversation=mem.conversation, created_at__gt=last_ts).count()
 		return Response({"by_conversation": counts, "total": sum(counts.values())})
 

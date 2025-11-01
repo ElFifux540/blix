@@ -106,3 +106,31 @@ class GroupInvitation(models.Model):
 		return f"Invitation {self.conversation.name} pour {self.to_user.username}"
 
 
+class Notification(models.Model):
+	NOTIFICATION_TYPE_CHOICES = [
+		('message', 'Message'),
+		('contact', 'Contact'),
+		('group', 'Groupe'),
+	]
+	
+	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+	type = models.CharField(max_length=20, choices=NOTIFICATION_TYPE_CHOICES)
+	title = models.CharField(max_length=255)
+	content = models.TextField()
+	conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
+	contact = models.ForeignKey(Contact, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
+	group_invitation = models.ForeignKey(GroupInvitation, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
+	read = models.BooleanField(default=False)
+	created_at = models.DateTimeField(auto_now_add=True)
+	
+	class Meta:
+		ordering = ['-created_at']
+		indexes = [
+			models.Index(fields=['user', 'read', '-created_at']),
+			models.Index(fields=['user', 'type']),
+		]
+	
+	def __str__(self):
+		return f"Notification {self.type} pour {self.user.username}: {self.title}"
+
+

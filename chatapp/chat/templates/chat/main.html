@@ -95,8 +95,35 @@
         }
         .main-header { padding: 12px 16px; border-bottom: 1px solid #202225; font-weight: bold; }
         .messages { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 16px; }
-        .composer { padding: 12px 16px; border-top: 1px solid #202225; display: flex; gap: 8px; }
+        .composer { padding: 12px 16px; border-top: 1px solid #202225; display: flex; gap: 8px; position: relative; }
         .composer input { flex: 1; background: #1e1f22; border: 1px solid #3a3c41; border-radius: 8px; color: #fff; padding: 10px 12px; }
+        
+        /* Drag & Drop pour la zone de conversation */
+        .main-pane.drag-over { 
+            background: #2a3c51; 
+            border: 3px dashed #5865f2; 
+            position: relative;
+        }
+        .drag-overlay { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+            background: rgba(88, 101, 242, 0.9); 
+            border: 2px solid #5865f2; 
+            border-radius: 12px; 
+            padding: 30px 50px;
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 18px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(88, 101, 242, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        .main-pane.dragging .drag-overlay { display: flex; }
         .btn { background: #5865f2; color: white; padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; }
         .btn:hover { filter: brightness(1.05); }
 
@@ -263,6 +290,142 @@
             margin-left: 0;
             margin-right: auto;
         }
+        
+        /* Système de notifications */
+        .notification-popup {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: #2b2d31;
+            border: 1px solid #3a3c41;
+            border-radius: 8px;
+            padding: 16px;
+            min-width: 300px;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            color: #e3e5e8;
+        }
+        .notification-popup.show { transform: translateX(0); }
+        .notification-popup.hide { transform: translateX(100%); }
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .notification-title {
+            font-weight: bold;
+            color: #5865f2;
+        }
+        .notification-close {
+            background: none;
+            border: none;
+            color: #8e9297;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+        }
+        .notification-body {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .notification-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+        }
+        .notification-btn {
+            background: #5865f2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .notification-btn:hover { background: #4752c4; }
+        
+        /* Mini-onglet notifications dans le header */
+        .notification-mini-tab {
+            position: relative;
+            cursor: pointer;
+            padding: 8px 12px;
+            background: #3a3c41;
+            border-radius: 6px;
+            color: #e3e5e8;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .notification-mini-tab:hover { background: #4a4c51; }
+        .notification-mini-tab.has-notifications { background: #5865f2; }
+        .notification-count {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        /* Dropdown des notifications */
+        .notification-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: #2b2d31;
+            border: 1px solid #3a3c41;
+            border-radius: 8px;
+            min-width: 280px;
+            max-height: 400px;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1001;
+            display: none;
+        }
+        .notification-dropdown.show { display: block; }
+        .notification-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #3a3c41;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .notification-item:hover { background: #3a3c41; }
+        .notification-item:last-child { border-bottom: none; }
+        .notification-item-title {
+            font-weight: bold;
+            color: #e3e5e8;
+            margin-bottom: 4px;
+        }
+        .notification-item-content {
+            font-size: 12px;
+            color: #8e9297;
+            margin-bottom: 4px;
+        }
+        .notification-item-time {
+            font-size: 10px;
+            color: #6a6d72;
+        }
+        .notification-empty {
+            padding: 20px;
+            text-align: center;
+            color: #8e9297;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -271,6 +434,13 @@
             <div>💬 Chat App</div>
             <div style="display:flex; align-items:center; gap:12px;">
                 <span>Bienvenue, <strong id="username">{{ user.username }}</strong></span>
+                <div class="notification-mini-tab" id="notification-tab" onclick="toggleNotificationDropdown()">
+                    🔔 Notifications
+                    <div class="notification-count" id="notification-count" style="display: none;">0</div>
+                    <div class="notification-dropdown" id="notification-dropdown">
+                        <div class="notification-empty" id="notification-empty">Rien à signaler par ici</div>
+                    </div>
+                </div>
                 <form method="post" action="/accounts/logout/" style="display: inline;">
                     {% csrf_token %}
                     <button type="submit" style="background: none; border: none; color: #e3e5e8; text-decoration: underline; cursor: pointer;">Se déconnecter</button>
@@ -290,10 +460,11 @@
             <div style="padding:12px; border-top:1px solid #202225;" id="channels-actions"></div>
         </section>
 
-        <main class="main-pane">
+        <main class="main-pane" id="main-pane">
+            <div class="drag-overlay">📎 Déposez votre fichier ici</div>
             <div class="main-header" id="main-title">Sélectionnez une conversation</div>
             <div class="messages" id="chat-messages"></div>
-            <div class="composer">
+            <div class="composer" id="composer">
                 <input type="file" id="file-input" style="max-width: 260px;" />
                 <input type="text" id="message-input" placeholder="Tapez votre message..." onkeypress="handleKeyPress(event)">
                 <button class="btn" onclick="sendMessage()">Envoyer</button>
@@ -304,10 +475,29 @@
     <!-- Notifications -->
     <div id="notification" class="notification"></div>
     
+    <!-- Notification popup -->
+    <div id="notification-popup" class="notification-popup">
+        <div class="notification-header">
+            <div class="notification-title" id="popup-title">Notification</div>
+            <button class="notification-close" onclick="closeNotificationPopup()">×</button>
+        </div>
+        <div class="notification-body" id="popup-body">Contenu de la notification</div>
+        <div class="notification-actions" id="popup-actions" style="display: none;">
+            <button class="notification-btn" id="popup-action-btn">Action</button>
+        </div>
+    </div>
+    
     <script>
         let currentConversation = null;
         let ws = null;
+        let notificationWs = null;
         let unreadCounts = {};
+        let messages = []; // Stocker les messages pour gérer l'affichage des dates
+        
+        // Système de notifications
+        let notifications = [];
+        let notificationTimeout = null;
+        let isNotificationDropdownOpen = false;
         
         // Récupérer le token CSRF
         let csrfToken = null;
@@ -344,6 +534,7 @@
             if (kind === 'direct') document.getElementById('server-direct').classList.add('active');
             if (kind === 'groups') document.getElementById('server-groups').classList.add('active');
             renderChannels();
+            refreshSelectors();
         }
         
         // Charger les conversations
@@ -365,12 +556,6 @@
                 window.__directConvs = directConvs;
                 window.__groupConvs = groupConvs;
                 renderChannels();
-                
-                // Charger aussi les contacts pour la liste déroulante
-                loadContactsForDropdown();
-                // Charger les groupes et contacts pour l'invitation aux groupes
-                loadGroupsForInvite();
-                loadContactsForGroupInvite();
             } catch (error) {
                 showNotification('Erreur lors du chargement des conversations', 'error');
             }
@@ -399,7 +584,7 @@
             } else if (currentServer === 'direct') {
                 title.textContent = 'Conversations privées';
                 (window.__directConvs || []).forEach(conv => {
-                    const otherUser = conv.memberships?.find(m => m.user.id !== {{ user.id }})?.user;
+                    const otherUser = conv.memberships?.find(m => m.user.id !== {{ user.id|escapejs }})?.user;
                     const displayName = otherUser ? otherUser.username : `Direct ${conv.id}`;
                     const item = document.createElement('div');
                     item.className = 'channel-item';
@@ -495,7 +680,7 @@
             contacts.forEach(contact => {
                 const div = document.createElement('div');
                 div.className = 'list-item';
-                const otherUser = contact.from_user.username === '{{ user.username }}' ? contact.to_user.username : contact.from_user.username;
+                const otherUser = contact.from_user.username === '{{ user.username|escapejs }}' ? contact.to_user.username : contact.from_user.username;
                 div.innerHTML = `
                     <span>${otherUser}</span>
                     <div>
@@ -699,6 +884,9 @@
             currentConversation = conversationId;
             document.getElementById('main-title').textContent = title;
             
+            // Marquer les messages comme lus et mettre à jour les badges
+            markConversationAsRead(conversationId);
+            
             // Fermer la connexion WebSocket précédente
             if (ws) {
                 ws.close();
@@ -716,7 +904,13 @@
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data.message) {
-                    displayMessage(data.message);
+                    messages.push(data.message);
+                    const prevMsg = messages.length > 1 ? messages[messages.length - 2] : null;
+                    displayMessage(data.message, prevMsg);
+                    // Mettre à jour le badge de la conversation si on n'est pas dans cette conversation
+                    if (data.message.sender !== {{ user.id|escapejs }} && currentConversation !== conversationId) {
+                        updateConversationBadge(conversationId, true);
+                    }
                 } else if (data.error) {
                     showNotification(data.error, 'error');
                 }
@@ -730,6 +924,7 @@
         function closeChat() {
             if (ws) { ws.close(); ws = null; }
             currentConversation = null;
+            messages = []; // Réinitialiser les messages
             document.getElementById('main-title').textContent = 'Sélectionnez une conversation';
             document.getElementById('chat-messages').innerHTML = '';
         }
@@ -740,11 +935,12 @@
                 const res = await fetch(`/api/conversations/${currentConversation}/messages/`, {
                     headers: headers
                 });
-                const messages = await res.json();
+                const loadedMessages = await res.json();
+                messages = loadedMessages;
                 
             const container = document.getElementById('chat-messages');
                 container.innerHTML = '';
-                messages.forEach(msg => displayMessage(msg));
+                messages.forEach((msg, index) => displayMessage(msg, index > 0 ? messages[index - 1] : null));
             } catch (error) {
                 showNotification('Erreur lors du chargement des messages', 'error');
             }
@@ -756,7 +952,7 @@
             return [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"].some(ext => lower.endsWith(ext));
         }
 
-        function displayMessage(msg) {
+        function displayMessage(msg, prevMsg = null) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
             const senderId = (msg.sender && typeof msg.sender === 'object' && msg.sender.id) ? msg.sender.id : (typeof msg.sender === 'number' ? msg.sender : null);
@@ -783,8 +979,21 @@
                     attachmentHtml = `<div style="margin-top:6px;"><a href="${url}" target="_blank" download rel="noopener">📎 Télécharger ${filename}</a></div>`;
                 }
             }
+            
+            // Vérifier si on doit afficher la date (changement de jour)
+            const msgDate = new Date(msg.created_at);
+            let dateHtml = '';
+            if (!prevMsg) {
+                dateHtml = `<div style="text-align:center; margin:10px 0; color:#8e9297; font-size:11px;">${msgDate.toLocaleDateString()}</div>`;
+            } else {
+                const prevMsgDate = new Date(prevMsg.created_at);
+                if (msgDate.toDateString() !== prevMsgDate.toDateString()) {
+                    dateHtml = `<div style="text-align:center; margin:10px 0; color:#8e9297; font-size:11px;">${msgDate.toLocaleDateString()}</div>`;
+                }
+            }
 
             div.innerHTML = `
+                ${dateHtml}
                 <strong>${senderName}:</strong> ${msg.content || ''}
                 ${attachmentHtml}
                 <br><small>${new Date(msg.created_at).toLocaleTimeString()}</small>
@@ -850,10 +1059,35 @@
             }, 3000);
         }
         
+        // Charger les compteurs de messages non lus
+        async function loadUnreadCounts() {
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/conversations/unread-count/', {
+                    headers: headers
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    unreadCounts = data.by_conversation || {};
+                    // Mettre à jour tous les badges
+                    Object.keys(unreadCounts).forEach(convId => {
+                        updateConversationBadge(convId, false);
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des compteurs:', error);
+            }
+        }
+        
         // Récupérer le token CSRF au chargement
         document.addEventListener('DOMContentLoaded', function() {
             getCSRFToken();
             loadConversations();
+            loadUnreadCounts();
+            setupDragAndDrop();
+            setupNotificationWebSocket();
+            loadNotifications();
         });
         
         // Panneaux menus -> affichage dans la zone principale
@@ -925,6 +1159,10 @@
                 if (res.ok) {
                     const groups = await res.json();
                     const select = document.getElementById('group-select');
+                    if (!select) {
+                        console.warn('Élément group-select non trouvé dans le DOM');
+                        return;
+                    }
                     select.innerHTML = '<option value="">-- Choisir un groupe --</option>';
                     
                     groups.forEach(group => {
@@ -950,6 +1188,10 @@
                 if (res.ok) {
                     const contacts = await res.json();
                     const select = document.getElementById('group-invite-select');
+                    if (!select) {
+                        console.warn('Élément group-invite-select non trouvé dans le DOM');
+                        return;
+                    }
                     select.innerHTML = '<option value="">-- Choisir un contact --</option>';
                     
                     contacts.forEach(contact => {
@@ -1050,6 +1292,466 @@
             } else if (currentServer === 'groups') {
                 loadGroupsForInvite();
                 loadContactsForGroupInvite();
+            }
+        }
+        
+        // === DRAG & DROP FUNCTIONALITY ===
+        function setupDragAndDrop() {
+            const mainPane = document.getElementById('main-pane');
+            const fileInput = document.getElementById('file-input');
+            
+            // Empêcher le comportement par défaut sur tout le document
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                document.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            // Gestion des événements de drag sur la zone principale
+            ['dragenter', 'dragover'].forEach(eventName => {
+                mainPane.addEventListener(eventName, handleDragEnter, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                mainPane.addEventListener(eventName, handleDragLeave, false);
+            });
+            
+            mainPane.addEventListener('drop', handleDrop, false);
+            
+            function handleDragEnter(e) {
+                mainPane.classList.add('dragging');
+                mainPane.classList.add('drag-over');
+            }
+            
+            function handleDragLeave(e) {
+                // Ne retirer la classe que si on quitte vraiment la zone
+                if (!mainPane.contains(e.relatedTarget)) {
+                    mainPane.classList.remove('dragging');
+                    mainPane.classList.remove('drag-over');
+                }
+            }
+            
+            function handleDrop(e) {
+                mainPane.classList.remove('dragging');
+                mainPane.classList.remove('drag-over');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    // Afficher un message de confirmation
+                    showNotification(`Fichier sélectionné : ${files[0].name}`, 'info');
+                }
+            }
+        }
+        
+        // === NOTIFICATION SYSTEM ===
+        
+        // Configuration du WebSocket pour les notifications
+        function setupNotificationWebSocket() {
+            const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+            notificationWs = new WebSocket(`${protocol}://${window.location.host}/ws/notifications/`);
+            
+            notificationWs.onopen = () => {
+            };
+            
+            notificationWs.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'notification') {
+                    const notification = data.notification;
+                    // Ajouter la notification à la liste locale
+                    notifications.unshift(notification);
+                    updateNotificationUI();
+                    
+                    // Afficher le popup
+                    showNotificationPopup(notification);
+                }
+            };
+            
+            notificationWs.onerror = (error) => {
+                console.error('Erreur WebSocket des notifications:', error);
+            };
+            
+            notificationWs.onclose = () => {
+                console.log('Déconnecté du WebSocket des notifications');
+                // Reconnexion automatique après 5 secondes
+                setTimeout(() => {
+                    setupNotificationWebSocket();
+                }, 5000);
+            };
+        }
+        
+        // Charger les notifications depuis le serveur
+        async function loadNotifications() {
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/notifications/', {
+                    headers: headers
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    notifications = data.notifications || [];
+                    updateNotificationUI();
+                } else {
+                    console.error('Erreur HTTP:', res.status, await res.text());
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des notifications:', error);
+            }
+        }
+        
+        // Ajouter une nouvelle notification
+        function addNotification(type, title, content, action = null) {
+            console.log('Ajout d\'une notification:', { type, title, content, action });
+            
+            const notification = {
+                id: Date.now(),
+                type: type, // 'message', 'contact', 'group'
+                title: title,
+                content: content,
+                timestamp: new Date().toISOString(),
+                action: action,
+                read: false
+            };
+            
+            notifications.unshift(notification);
+            updateNotificationUI();
+            
+            // Afficher le popup
+            showNotificationPopup(notification);
+            
+            // Sauvegarder côté serveur
+            saveNotification(notification);
+        }
+        
+        // Sauvegarder une notification côté serveur
+        async function saveNotification(notification) {
+            try {
+                const headers = await getHeaders();
+                await fetch('/api/notifications/', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(notification)
+                });
+            } catch (error) {
+                console.error('Erreur lors de la sauvegarde de la notification:', error);
+            }
+        }
+        
+        // Mettre à jour l'interface des notifications
+        function updateNotificationUI() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            const countElement = document.getElementById('notification-count');
+            const tabElement = document.getElementById('notification-tab');
+            const dropdownElement = document.getElementById('notification-dropdown');
+            
+            // Vérifier que les éléments existent
+            if (!countElement || !tabElement || !dropdownElement) {
+                return;
+            }
+            
+            // Mettre à jour le compteur
+            if (unreadCount > 0) {
+                countElement.textContent = unreadCount;
+                countElement.style.display = 'flex';
+                tabElement.classList.add('has-notifications');
+            } else {
+                countElement.style.display = 'none';
+                tabElement.classList.remove('has-notifications');
+            }
+            
+            // Mettre à jour le dropdown
+            // Vider complètement le dropdown pour reconstruire
+            while (dropdownElement.firstChild) {
+                dropdownElement.removeChild(dropdownElement.firstChild);
+            }
+            
+            if (notifications.length === 0) {
+                // Réafficher le message vide
+                const empty = document.createElement('div');
+                empty.id = 'notification-empty';
+                empty.className = 'notification-empty';
+                empty.textContent = 'Rien à signaler par ici';
+                dropdownElement.appendChild(empty);
+            } else {
+                notifications.slice(0, 10).forEach(notification => {
+                    const item = document.createElement('div');
+                    item.className = `notification-item ${!notification.read ? 'unread' : ''}`;
+                    item.innerHTML = `
+                        <div style="flex: 1; cursor: pointer;">
+                            <div class="notification-item-title">${notification.title}</div>
+                            <div class="notification-item-content">${notification.content}</div>
+                            <div class="notification-item-time">${formatTime(notification.timestamp || notification.created_at)}</div>
+                        </div>
+                        <button onclick="event.stopPropagation(); deleteNotification(${notification.id})" 
+                                style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            ✕
+                        </button>
+                    `;
+                    // Ajouter le gestionnaire de clic sur le contenu, pas sur le bouton
+                    const clickableContent = item.querySelector('div');
+                    clickableContent.onclick = () => handleNotificationClick(notification);
+                    dropdownElement.appendChild(item);
+                });
+                
+                // Ajouter le bouton pour supprimer toutes les notifications
+                const clearAllBtn = document.createElement('div');
+                clearAllBtn.style.padding = '10px';
+                clearAllBtn.style.textAlign = 'center';
+                clearAllBtn.style.borderTop = '1px solid #3a3c41';
+                clearAllBtn.innerHTML = '<button onclick="clearAllNotifications()" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Supprimer toutes les notifications</button>';
+                dropdownElement.appendChild(clearAllBtn);
+            }
+        }
+        
+        // Afficher le popup de notification
+        function showNotificationPopup(notification) {
+            const popup = document.getElementById('notification-popup');
+            const title = document.getElementById('popup-title');
+            const body = document.getElementById('popup-body');
+            const actions = document.getElementById('popup-actions');
+            const actionBtn = document.getElementById('popup-action-btn');
+            
+            if (!popup || !title || !body) {
+                return;
+            }
+            
+            title.textContent = notification.title;
+            body.textContent = notification.content;
+            
+            if (notification.action) {
+                if (actionBtn && actions) {
+                    actionBtn.textContent = notification.action.label || 'Voir';
+                    actionBtn.onclick = () => handleNotificationAction(notification);
+                    actions.style.display = 'flex';
+                }
+            } else {
+                if (actions) {
+                    actions.style.display = 'none';
+                }
+            }
+            
+            popup.classList.remove('hide');
+            popup.style.display = 'block';
+            popup.classList.add('show');
+            
+            // Auto-hide après 5 secondes
+            if (notificationTimeout) {
+                clearTimeout(notificationTimeout);
+            }
+            notificationTimeout = setTimeout(() => {
+                closeNotificationPopup();
+            }, 5000);
+        }
+        
+        // Fermer le popup de notification
+        function closeNotificationPopup() {
+            const popup = document.getElementById('notification-popup');
+            popup.classList.remove('show');
+            popup.classList.add('hide');
+            
+            setTimeout(() => {
+                popup.classList.remove('hide');
+                popup.style.display = 'none';
+            }, 300);
+        }
+        
+        // Basculer le dropdown des notifications
+        function toggleNotificationDropdown() {
+            const dropdown = document.getElementById('notification-dropdown');
+            isNotificationDropdownOpen = !isNotificationDropdownOpen;
+            
+            if (isNotificationDropdownOpen) {
+                dropdown.classList.add('show');
+            } else {
+                dropdown.classList.remove('show');
+            }
+        }
+        
+        // Gérer le clic sur une notification
+        function handleNotificationClick(notification) {
+            // Marquer comme lue
+            notification.read = true;
+            updateNotificationUI();
+            
+            // Fermer le dropdown
+            isNotificationDropdownOpen = false;
+            document.getElementById('notification-dropdown').classList.remove('show');
+            
+            // Exécuter l'action si elle existe
+            if (notification.action) {
+                handleNotificationAction(notification);
+            }
+            
+            // Sauvegarder le changement côté serveur
+            markNotificationAsRead(notification.id);
+        }
+        
+        // Gérer l'action d'une notification
+        function handleNotificationAction(notification) {
+            if (notification.type === 'message') {
+                // Ouvrir la conversation correspondante
+                if (notification.action.conversationId) {
+                    const conv = [...(window.__directConvs || []), ...(window.__groupConvs || [])]
+                        .find(c => c.id === notification.action.conversationId);
+                    if (conv) {
+                        const title = conv.name || conv.memberships?.find(m => m.user.id !== {{ user.id|escapejs }})?.user?.username || `Conversation ${conv.id}`;
+                        openChat(notification.action.conversationId, title);
+                    }
+                }
+            } else if (notification.type === 'contact') {
+                // Aller au menu contacts
+                selectServer('menus');
+                loadContactsPanel();
+            } else if (notification.type === 'group') {
+                // Aller au menu invitations
+                selectServer('menus');
+                loadInvitationsPanel();
+            }
+        }
+        
+        // Marquer une notification comme lue côté serveur
+        async function markNotificationAsRead(notificationId) {
+            try {
+                // Envoyer via WebSocket
+                if (notificationWs && notificationWs.readyState === WebSocket.OPEN) {
+                    notificationWs.send(JSON.stringify({
+                        action: 'mark_read',
+                        notification_id: notificationId
+                    }));
+                } else {
+                    // Fallback via API REST
+                    const headers = await getHeaders();
+                    await fetch(`/api/notifications/${notificationId}/mark-read/`, {
+                        method: 'POST',
+                        headers: headers
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur lors du marquage de la notification comme lue:', error);
+            }
+        }
+        
+        // Supprimer une notification
+        async function deleteNotification(notificationId) {
+            // Retirer immédiatement de la liste locale pour un feedback instantané
+            notifications = notifications.filter(n => n.id !== notificationId);
+            updateNotificationUI();
+            
+            try {
+                const headers = await getHeaders();
+                const res = await fetch(`/api/notifications/${notificationId}/`, {
+                    method: 'DELETE',
+                    headers: headers
+                });
+                
+                if (res.ok || res.status === 204 || res.status === 404) {
+                    // Succès ou déjà supprimée, l'UI est déjà mise à jour
+                } else {
+                    const error = await res.json().catch(() => ({}));
+                    console.error('Erreur lors de la suppression:', res.status, error);
+                }
+            } catch (error) {
+                console.error('Erreur lors de la suppression de la notification:', error);
+            }
+        }
+        
+        // Supprimer toutes les notifications
+        async function clearAllNotifications() {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer toutes les notifications ?')) {
+                return;
+            }
+            
+            try {
+                const headers = await getHeaders();
+                const res = await fetch('/api/notifications/clear-all/', {
+                    method: 'DELETE',
+                    headers: headers
+                });
+                
+                if (res.ok) {
+                    notifications = [];
+                    updateNotificationUI();
+                }
+            } catch (error) {
+                console.error('Erreur lors de la suppression de toutes les notifications:', error);
+            }
+        }
+        
+        // Formater l'heure
+        function formatTime(timestamp) {
+            if (!timestamp) {
+                return '';
+            }
+            
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) {
+                console.warn('Date invalide:', timestamp);
+                return '';
+            }
+            
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) { // Moins d'1 minute
+                return 'À l\'instant';
+            } else if (diff < 3600000) { // Moins d'1 heure
+                return `Il y a ${Math.floor(diff / 60000)} min`;
+            } else if (diff < 86400000) { // Moins d'1 jour
+                return `Il y a ${Math.floor(diff / 3600000)} h`;
+            } else {
+                return date.toLocaleDateString();
+            }
+        }
+        
+        // Fermer le dropdown quand on clique ailleurs
+        document.addEventListener('click', function(event) {
+            const tab = document.getElementById('notification-tab');
+            const dropdown = document.getElementById('notification-dropdown');
+            
+            if (!tab.contains(event.target) && isNotificationDropdownOpen) {
+                isNotificationDropdownOpen = false;
+                dropdown.classList.remove('show');
+            }
+        });
+        
+        // === CONVERSATION BADGES ===
+        
+        // Marquer une conversation comme lue
+        async function markConversationAsRead(conversationId) {
+            unreadCounts[conversationId] = 0;
+            updateConversationBadge(conversationId, false);
+            
+            // Sauvegarder côté serveur
+            try {
+                const headers = await getHeaders();
+                await fetch(`/api/conversations/${conversationId}/mark-read/`, {
+                    method: 'POST',
+                    headers: headers
+                });
+            } catch (error) {
+                console.error('Erreur lors du marquage comme lu:', error);
+            }
+        }
+        
+        // Mettre à jour le badge d'une conversation
+        function updateConversationBadge(conversationId, increment = false) {
+            if (increment) {
+                unreadCounts[conversationId] = (unreadCounts[conversationId] || 0) + 1;
+            }
+            
+            const badge = document.getElementById(`badge-${conversationId}`);
+            if (badge) {
+                const count = unreadCounts[conversationId] || 0;
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
             }
         }
     </script>

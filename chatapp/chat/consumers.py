@@ -65,6 +65,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 				},
 			},
 		)
+		
+		# Créer des notifications pour les autres membres de la conversation
+		await self._create_message_notifications(user.id, self.conversation.id, message_obj["sender_username"], content)
 
 	async def chat_message(self, event):
 		await self.send(text_data=json.dumps({"message": event["message"]}))
@@ -120,3 +123,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
 			"content": msg.content,
 			"created_at": msg.created_at.isoformat(),
 		}
+	
+	@database_sync_to_async
+	def _create_message_notifications(self, sender_id: int, conversation_id: int, sender_username: str, content: str):
+		"""Créer des notifications pour les autres membres de la conversation"""
+		from .notification_views import create_message_notification
+		from .models import Conversation
+		
+		conversation = Conversation.objects.get(pk=conversation_id)
+		other_members = Membership.objects.filter(conversation_id=conversation_id).exclude(user_id=sender_id)
+		
+		for membership in other_members:
+			create_message_notification(
+				user=membership.user,
+				conversation=conversation,
+				sender_username=sender_username,
+				message_content=content
+			)
