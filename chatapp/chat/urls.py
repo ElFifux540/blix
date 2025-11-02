@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import ConversationViewSet, get_csrf_token, get_all_users, test_page
 from .contact_views import ContactViewSet, GroupInvitationViewSet
 from .notification_views import NotificationViewSet
+from .htmx_views import htmx_login_view, htmx_load_messages, htmx_send_message
 
 router = DefaultRouter()
 router.register(r"conversations", ConversationViewSet, basename="conversation")
@@ -13,7 +14,7 @@ router.register(r"notifications", NotificationViewSet, basename="notification")
 
 def main_view(request):
     if not request.user.is_authenticated:
-        return redirect("/accounts/login/")
+        return redirect("/accounts/htmx-login/")
     return render(request, "chat/main.html")
 
 urlpatterns = [
@@ -22,4 +23,7 @@ urlpatterns = [
 	path("api/csrf-token/", get_csrf_token, name="csrf_token"),
 	path("api/users/all/", get_all_users, name="all_users"),
 	path("api/", include(router.urls)),
+	path("accounts/htmx-login/", htmx_login_view, name="htmx_login"),
+	path("htmx/messages/", htmx_load_messages, name="htmx_messages"),
+	path("htmx/send-message/", htmx_send_message, name="htmx_send_message"),
 ]

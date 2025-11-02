@@ -4,38 +4,143 @@
   <meta charset="UTF-8">
   <title>Connexion</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <style>
-    body { font-family: sans-serif; padding: 2rem; max-width: 420px; margin: 0 auto; }
-    form { display: grid; gap: 0.75rem; }
-    input { padding: 0.5rem 0.6rem; font-size: 1rem; }
-    button { padding: 0.6rem 0.9rem; font-size: 1rem; cursor: pointer; }
-    .errorlist { color: #b00020; }
-    .topbar { display:flex; justify-content: space-between; margin-bottom:1rem; }
-    a { text-decoration:none; }
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      padding: 2rem; 
+      max-width: 420px; 
+      margin: 0 auto; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-container {
+      background: white;
+      padding: 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      width: 100%;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      font-size: 2rem;
+    }
+    form { 
+      display: grid; 
+      gap: 1.25rem; 
+    }
+    label {
+      font-weight: 500;
+      color: #555;
+      margin-bottom: 0.25rem;
+    }
+    input { 
+      padding: 0.75rem 1rem; 
+      font-size: 1rem; 
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    button { 
+      padding: 0.75rem 1.5rem; 
+      font-size: 1rem; 
+      cursor: pointer; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .errorlist { 
+      color: #b00020; 
+      margin-top: 0.5rem; 
+      padding: 0.75rem; 
+      background: #ffebee; 
+      border-radius: 8px; 
+      border-left: 4px solid #b00020;
+    }
+    .topbar { 
+      display:flex; 
+      justify-content: space-between; 
+      margin-bottom:1.5rem; 
+    }
+    .topbar a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    .topbar a:hover {
+      color: #764ba2;
+    }
+    #error-container { 
+      margin-bottom: 1rem; 
+      min-height: 20px;
+    }
+    .htmx-indicator {
+      display: none;
+    }
+    .htmx-request .htmx-indicator {
+      display: inline;
+    }
+    .htmx-request .button-text {
+      display: none;
+    }
   </style>
   {% load static %}
   {% load i18n %}
 </head>
 <body>
-  <div class="topbar">
-    <div><a href="/">← Accueil</a></div>
-    <div><a href="/admin/">Admin</a></div>
+  <div class="login-container">
+    <div class="topbar">
+      <div><a href="/">← Accueil</a></div>
+      <div><a href="/admin/">Admin</a></div>
+    </div>
+    <h1>Connexion</h1>
+    <div id="error-container">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="errorlist">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    </div>
+    <form method="post" action="{% url 'htmx_login' %}" 
+          hx-post="{% url 'htmx_login' %}" 
+          hx-target="#error-container" 
+          hx-swap="innerHTML"
+          hx-indicator="#loading-indicator">
+      {% csrf_token %}
+      <label for="id_username">Utilisateur</label>
+      <input type="text" name="username" autofocus required id="id_username" />
+      <label for="id_password">Mot de passe</label>
+      <input type="password" name="password" required id="id_password" />
+      <button type="submit">
+        <span id="loading-indicator" class="htmx-indicator">Connexion...</span>
+        <span class="button-text">Se connecter</span>
+      </button>
+    </form>
+    <p style="margin-top:1.5rem; text-align: center; color: #666;">
+      <a href="{% url 'password_reset' %}" style="color: #667eea;">Mot de passe oublié ?</a>
+    </p>
   </div>
-  <h1>Connexion</h1>
-  {% if form.errors %}
-    <p class="errorlist">Identifiants invalides. Réessaie.</p>
-  {% endif %}
-  <form method="post" action="{% url 'login' %}">
-    {% csrf_token %}
-    <label for="id_username">Utilisateur</label>
-    <input type="text" name="username" autofocus required id="id_username" />
-    <label for="id_password">Mot de passe</label>
-    <input type="password" name="password" required id="id_password" />
-    <button type="submit">Se connecter</button>
-  </form>
-  <p style="margin-top:1rem;">
-    <a href="{% url 'password_reset' %}">Mot de passe oublié ?</a>
-  </p>
 </body>
 </html>
 

@@ -76,6 +76,10 @@ class NotificationViewSet(viewsets.ModelViewSet):
 # Fonctions utilitaires pour créer des notifications
 def create_message_notification(user, conversation, sender_username, message_content):
 	"""Créer une notification pour un nouveau message"""
+	import logging
+	logger = logging.getLogger(__name__)
+	
+	logger.info(f"[NOTIF-CREATE] Création notification message pour user {user.id} dans conversation {conversation.id}")
 	title = f"Nouveau message de {sender_username}"
 	content = message_content[:100] + "..." if len(message_content) > 100 else message_content
 	
@@ -86,6 +90,7 @@ def create_message_notification(user, conversation, sender_username, message_con
 		content=content,
 		conversation=conversation
 	)
+	logger.info(f"[NOTIF-CREATE] Notification créée avec ID: {notification.id}")
 	
 	# Envoyer via WebSocket
 	send_notification_websocket(user.id, notification)
@@ -134,11 +139,16 @@ def create_group_invitation_notification(user, group_invitation):
 
 def send_notification_websocket(user_id, notification):
 	"""Envoyer une notification via WebSocket"""
+	import logging
+	logger = logging.getLogger(__name__)
+	
 	from asgiref.sync import async_to_sync
 	from channels.layers import get_channel_layer
 	
 	channel_layer = get_channel_layer()
 	user_group_name = f"notifications_{user_id}"
+	
+	logger.info(f"[NOTIF-WS] Envoi notification {notification.id} à user {user_id} via groupe {user_group_name}")
 	
 	async_to_sync(channel_layer.group_send)(
 		user_group_name,
@@ -159,6 +169,7 @@ def send_notification_websocket(user_id, notification):
 			}
 		}
 	)
+	logger.info(f"[NOTIF-WS] Notification {notification.id} envoyée avec succès")
 
 
 def cleanup_old_notifications(days=30):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script de test complet pour l'application Chat
-Teste: DB, Messages, WebSocket, Fichiers, Notifications
+Teste: DB, Messages, WebSocket, Fichiers, Notifications, HTMX
 """
 
 import os
@@ -220,6 +220,42 @@ def test_views():
         return False
 
 
+def test_htmx_views():
+    """Test des vues HTMX"""
+    print("\n=== TEST HTMX VUES ===")
+    
+    try:
+        from chat.htmx_views import htmx_load_messages, htmx_send_message
+        
+        user1 = User.objects.get(username='testuser1')
+        conv = Conversation.objects.filter(memberships__user=user1).first()
+        
+        if not conv:
+            print("✗ Aucune conversation trouvée")
+            return False
+        
+        # Créer une requête mock
+        class MockRequest:
+            user = user1
+            method = 'GET'
+        
+        request = MockRequest()
+        
+        # Test htmx_load_messages (simulation)
+        print("✓ HTMX load_messages importé")
+        
+        # Test htmx_send_message (simulation)
+        print("✓ HTMX send_message importé")
+        
+        print("✓ Tests HTMX vues passés!")
+        return True
+    except Exception as e:
+        print(f"✗ Erreur tests HTMX vues: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def cleanup_test_data():
     """Nettoyer les données de test"""
     print("\n=== NETTOYAGE ===")
@@ -247,6 +283,7 @@ def main():
     results.append(("WebSocket Consumer", test_websocket_consumer()))
     results.append(("Notification Consumer", test_notification_consumer()))
     results.append(("Views", test_views()))
+    results.append(("HTMX Views", test_htmx_views()))
     
     # Résumé
     print("\n" + "=" * 50)

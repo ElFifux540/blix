@@ -1,4 +1,5 @@
 import json
+import logging
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
@@ -6,51 +7,70 @@ from django.contrib.auth.models import AnonymousUser
 
 from .models import Conversation, Membership, Message
 
+logger = logging.getLogger(__name__)
+
 
 class ChatConsumer(AsyncWebsocketConsumer):
 	async def connect(self):
 		user = self.scope.get("user")
+		logger.info(f"[WS-CONNECT] Tentative de connexion WebSocket par user {user.username if user and not isinstance(user, AnonymousUser) else 'Anonymous'}")
 		if not user or isinstance(user, AnonymousUser) or not user.is_authenticated:
+			logger.warning(f"[WS-CONNECT] Connexion refusée: user non authentifié")
 			await self.close(code=4401)
 			return
 		self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
+		logger.info(f"[WS-CONNECT] Room name: {self.room_name}")
 		# Accept either numeric conversation id or slug-like
 		self.conversation = await self._get_conversation(self.room_name)
 		if not self.conversation:
+			logger.warning(f"[WS-CONNECT] Conversation {self.room_name} introuvable")
 			await self.close(code=4404)
 			return
 		is_member = await self._is_member(self.conversation.id, user.id)
 		if not is_member:
+			logger.warning(f"[WS-CONNECT] User {user.id} n'est pas membre de conversation {self.conversation.id}")
 			await self.close(code=4403)
 			return
 		self.room_group_name = f"chat_{self.conversation.id}"
+		logger.info(f"[WS-CONNECT] User {user.username} (ID: {user.id}) connecté au chat {self.conversation.id}")
 
 		await self.channel_layer.group_add(self.room_group_name, self.channel_name)
 		await self.accept()
+		logger.info(f"[WS-CONNECT] Connexion WebSocket acceptée pour chat {self.conversation.id}")
 
 	async def disconnect(self, close_code):
 		# Guard in case connect was refused before room_group_name was set
 		room = getattr(self, "room_group_name", None)
+		user = self.scope.get("user")
+		username = user.username if user and hasattr(user, 'username') else 'Unknown'
+		logger.info(f"[WS-DISCONNECT] User {username} déconnecté du chat (close_code: {close_code})")
 		if room:
 			await self.channel_layer.group_discard(room, self.channel_name)
+			logger.info(f"[WS-DISCONNECT] Retiré du groupe {room}")
 
 	async def receive(self, text_data):
 		data = json.loads(text_data)
 		content = data.get("message", "").strip()
-		if not content:
-			return
 		user = self.scope.get("user")
+		logger.info(f"[WS-RECEIVE] Message reçu de user {user.username} (ID: {user.id}) dans conversation {self.conversation.id}: '{content[:50]}...'")
+		if not content:
+			logger.warning(f"[WS-RECEIVE] Message vide ignoré")
+			return
 		
 		# Vérifier les contacts pour les conversations privées
 		if self.conversation.type == "direct":
+			logger.info(f"[WS-RECEIVE] Vérification contact pour conversation directe {self.conversation.id}")
 			can_send = await self._check_contact_status(self.conversation.id, user.id)
 			if not can_send:
+				logger.warning(f"[WS-RECEIVE] Contact refusé pour user {user.id}")
 				await self.send(text_data=json.dumps({
 					"error": "Impossible d'envoyer un message : vous n'êtes plus en contact avec cet utilisateur"
 				}))
 				return
 		
 		message_obj = await self._create_message(self.conversation.id, user.id, content)
+		logger.info(f"[WS-RECEIVE] Message créé avec ID: {message_obj['id']}")
+		logger.info(f"[WS-RECEIVE] Envoi via channel layer vers groupe {self.room_group_name}")
 		await self.channel_layer.group_send(
 			self.room_group_name,
 			{
@@ -67,9 +87,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
 		)
 		
 		# Créer des notifications pour les autres membres de la conversation
+		logger.info(f"[WS-RECEIVE] Création notifications pour les autres membres")
 		await self._create_message_notifications(user.id, self.conversation.id, message_obj["sender_username"], content)
 
 	async def chat_message(self, event):
+		logger.info(f"[WS-CHAT-MESSAGE] Envoi message {event['message'].get('id')} via WebSocket")
 		await self.send(text_data=json.dumps({"message": event["message"]}))
 
 	@database_sync_to_async

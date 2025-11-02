@@ -4,430 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat App - Accueil</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #1e1f22; /* Discord-ish dark */
-            color: #e3e5e8;
-        }
-        .app-shell {
-            display: grid;
-            grid-template-columns: 72px 280px 1fr;
-            grid-template-rows: 48px 1fr;
-            grid-template-areas:
-                "header header header"
-                "servers channels main";
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-        }
-        .header {
-            grid-area: header;
-            background: #2b2d31;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-            box-shadow: 0 1px 0 rgba(0,0,0,0.2);
-        }
-        .servers-rail {
-            grid-area: servers;
-            background: #1f2124;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 8px;
-            overflow-y: auto;
-        }
-        .server-bubble {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #313338;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #e3e5e8;
-            cursor: pointer;
-            transition: transform 0.15s ease, background 0.15s ease;
-            user-select: none;
-        }
-        .server-bubble:hover { transform: translateY(-1px); background: #3a3c41; }
-        .server-bubble.active { background: #5865f2; }
-        .server-bubble .badge { position: absolute; margin-left: 28px; }
-
-        .channels-pane {
-            grid-area: channels;
-            background: #2b2d31;
-            border-right: 1px solid #202225;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            overflow: hidden;
-        }
-        .channels-header {
-            padding: 12px;
-            font-weight: bold;
-            border-bottom: 1px solid #202225;
-        }
-        .channel-list { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 8px; }
-        .channel-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            color: #c7c9ce;
-        }
-        .channel-item:hover, .channel-item.active { background: #3a3c41; color: #fff; }
-
-        .main-pane {
-            grid-area: main;
-            background: #313338;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-        .main-header { padding: 12px 16px; border-bottom: 1px solid #202225; font-weight: bold; }
-        .messages { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 16px; }
-        .composer { padding: 12px 16px; border-top: 1px solid #202225; display: flex; gap: 8px; position: relative; }
-        .composer input { flex: 1; background: #1e1f22; border: 1px solid #3a3c41; border-radius: 8px; color: #fff; padding: 10px 12px; }
-        
-        /* Drag & Drop pour la zone de conversation */
-        .main-pane.drag-over { 
-            background: #2a3c51; 
-            border: 3px dashed #5865f2; 
-            position: relative;
-        }
-        .drag-overlay { 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%);
-            background: rgba(88, 101, 242, 0.9); 
-            border: 2px solid #5865f2; 
-            border-radius: 12px; 
-            padding: 30px 50px;
-            display: none; 
-            align-items: center; 
-            justify-content: center; 
-            color: white; 
-            font-weight: bold; 
-            font-size: 18px;
-            z-index: 1000;
-            box-shadow: 0 8px 32px rgba(88, 101, 242, 0.3);
-            backdrop-filter: blur(10px);
-        }
-        .main-pane.dragging .drag-overlay { display: flex; }
-        .btn { background: #5865f2; color: white; padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; }
-        .btn:hover { filter: brightness(1.05); }
-
-        .message {
-            margin-bottom: 10px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            display: block;
-            width: fit-content;
-            max-width: 90%;
-            min-width: 30%;
-            overflow-wrap: anywhere;
-        }
-        .message.own { background: #5865f2; color: #fff; margin-left: auto; margin-right: 0; }
-        .message.other { background: #1f2124; color: #e3e5e8; margin-left: 0; margin-right: auto; }
-
-        .notification {
-            position: fixed; top: 20px; right: 20px; padding: 15px 20px; border-radius: 5px; color: white; font-weight: bold; z-index: 1000; display: none;
-        }
-        .notification.success { background: #28a745; }
-        .notification.error { background: #dc3545; }
-        .notification.info { background: #17a2b8; }
-        .form-group { 
-            margin-bottom: 15px; 
-        }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: bold; 
-        }
-        .form-group input, .form-group select { 
-            width: 100%; 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 5px; 
-            box-sizing: border-box; 
-        }
-        .btn { 
-            background: #007bff; 
-            color: white; 
-            padding: 10px 20px; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            margin-right: 10px; 
-        }
-        .btn:hover { 
-            background: #0056b3; 
-        }
-        .btn-success { 
-            background: #28a745; 
-        }
-        .btn-danger { 
-            background: #dc3545; 
-        }
-        .btn-warning { 
-            background: #ffc107; 
-            color: #212529; 
-        }
-        .list { 
-            max-height: 300px; 
-            overflow-y: auto; 
-            border: 1px solid #ddd; 
-            border-radius: 5px; 
-            padding: 10px; 
-        }
-        .list-item { 
-            padding: 10px; 
-            border-bottom: 1px solid #eee; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        .list-item:last-child { 
-            border-bottom: none; 
-        }
-        .notification { 
-            position: fixed; 
-            top: 20px; 
-            right: 20px; 
-            padding: 15px 20px; 
-            border-radius: 5px; 
-            color: white; 
-            font-weight: bold; 
-            z-index: 1000; 
-            display: none; 
-        }
-        .notification.success { 
-            background: #28a745; 
-        }
-        .notification.error { 
-            background: #dc3545; 
-        }
-        .notification.info { 
-            background: #17a2b8; 
-        }
-        .badge { 
-            background: #dc3545; 
-            color: white; 
-            border-radius: 50%; 
-            padding: 2px 6px; 
-            font-size: 12px; 
-            margin-left: 10px; 
-        }
-        .chat-window { 
-            position: fixed; 
-            bottom: 20px; 
-            right: 20px; 
-            width: 350px; 
-            height: 400px; 
-            background: white; 
-            border: 1px solid #ddd; 
-            border-radius: 10px; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
-            display: none; 
-            flex-direction: column; 
-        }
-        .chat-header { 
-            background: #007bff; 
-            color: white; 
-            padding: 15px; 
-            border-radius: 10px 10px 0 0; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        .chat-messages { 
-            flex: 1; 
-            padding: 15px; 
-            overflow-y: auto; 
-            max-height: 250px; 
-        }
-        .chat-input { 
-            padding: 15px; 
-            border-top: 1px solid #ddd; 
-            display: flex; 
-        }
-        .chat-input input { 
-            flex: 1; 
-            padding: 8px; 
-            border: 1px solid #ddd; 
-            border-radius: 20px; 
-            margin-right: 10px; 
-        }
-        .message {
-            margin-bottom: 10px;
-            padding: 8px 12px;
-            border-radius: 15px;
-            display: block;
-            width: fit-content;
-            max-width: 90%;
-            min-width: 30%;
-            overflow-wrap: anywhere;
-        }
-        .message.own {
-            background: #007bff;
-            color: white;
-            margin-left: auto;
-            margin-right: 0;
-        }
-        .message.other {
-            background: #f1f3f4;
-            color: #333;
-            margin-left: 0;
-            margin-right: auto;
-        }
-        
-        /* Système de notifications */
-        .notification-popup {
-            position: fixed;
-            top: 70px;
-            right: 20px;
-            background: #2b2d31;
-            border: 1px solid #3a3c41;
-            border-radius: 8px;
-            padding: 16px;
-            min-width: 300px;
-            max-width: 400px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            z-index: 1000;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            color: #e3e5e8;
-        }
-        .notification-popup.show { transform: translateX(0); }
-        .notification-popup.hide { transform: translateX(100%); }
-        .notification-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .notification-title {
-            font-weight: bold;
-            color: #5865f2;
-        }
-        .notification-close {
-            background: none;
-            border: none;
-            color: #8e9297;
-            cursor: pointer;
-            font-size: 18px;
-            padding: 0;
-            width: 20px;
-            height: 20px;
-        }
-        .notification-body {
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        .notification-actions {
-            margin-top: 12px;
-            display: flex;
-            gap: 8px;
-        }
-        .notification-btn {
-            background: #5865f2;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 6px 12px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-        .notification-btn:hover { background: #4752c4; }
-        
-        /* Mini-onglet notifications dans le header */
-        .notification-mini-tab {
-            position: relative;
-            cursor: pointer;
-            padding: 8px 12px;
-            background: #3a3c41;
-            border-radius: 6px;
-            color: #e3e5e8;
-            font-size: 14px;
-            transition: background 0.2s;
-        }
-        .notification-mini-tab:hover { background: #4a4c51; }
-        .notification-mini-tab.has-notifications { background: #5865f2; }
-        .notification-count {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background: #dc3545;
-            color: white;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-        
-        /* Dropdown des notifications */
-        .notification-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: #2b2d31;
-            border: 1px solid #3a3c41;
-            border-radius: 8px;
-            min-width: 280px;
-            max-height: 400px;
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            z-index: 1001;
-            display: none;
-        }
-        .notification-dropdown.show { display: block; }
-        .notification-item {
-            padding: 12px 16px;
-            border-bottom: 1px solid #3a3c41;
-            cursor: pointer;
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .notification-item:hover { background: #3a3c41; }
-        .notification-item:last-child { border-bottom: none; }
-        .notification-item-title {
-            font-weight: bold;
-            color: #e3e5e8;
-            margin-bottom: 4px;
-        }
-        .notification-item-content {
-            font-size: 12px;
-            color: #8e9297;
-            margin-bottom: 4px;
-        }
-        .notification-item-time {
-            font-size: 10px;
-            color: #6a6d72;
-        }
-        .notification-empty {
-            padding: 20px;
-            text-align: center;
-            color: #8e9297;
-            font-style: italic;
-        }
-    </style>
-</head>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'chat/main.css' %}">
+    </head>
 <body>
     <div class="app-shell">
         <div class="header">
@@ -452,6 +32,11 @@
             <div class="server-bubble" id="server-menu" title="Menus" onclick="selectServer('menus')">≡</div>
             <div class="server-bubble active" id="server-direct" title="Privés" onclick="selectServer('direct')">💬</div>
             <div class="server-bubble" id="server-groups" title="Groupes" onclick="selectServer('groups')">👥</div>
+            <div class="server-conversation-select-wrapper">
+                <select id="server-conversation-select" class="server-conversation-select" onchange="selectConversationFromSelect(this.value)" title="Changer de conversation">
+                    <option value="">💬</option>
+                </select>
+            </div>
         </aside>
 
         <section class="channels-pane">
@@ -463,11 +48,30 @@
         <main class="main-pane" id="main-pane">
             <div class="drag-overlay">📎 Déposez votre fichier ici</div>
             <div class="main-header" id="main-title">Sélectionnez une conversation</div>
-            <div class="messages" id="chat-messages"></div>
+            <div class="messages" id="chat-messages" 
+                 hx-trigger="loadMessages from:body"
+                 hx-get="/htmx/messages/" 
+                 hx-target="#chat-messages" 
+                 hx-swap="innerHTML"
+                 hx-vals='js:{"conversation_id": getCurrentConversationId()}'
+                 hx-on::after-swap="scrollToBottom()">
+            </div>
             <div class="composer" id="composer">
                 <input type="file" id="file-input" style="max-width: 260px;" />
-                <input type="text" id="message-input" placeholder="Tapez votre message..." onkeypress="handleKeyPress(event)">
-                <button class="btn" onclick="sendMessage()">Envoyer</button>
+                <form id="message-form" 
+                      hx-post="/htmx/send-message/" 
+                      hx-target="#chat-messages" 
+                      hx-swap="beforeend"
+                      hx-indicator="#sending-indicator"
+                      onsubmit="return handleHtmxSubmit(event)">
+                    {% csrf_token %}
+                    <input type="hidden" name="conversation_id" id="htmx-conversation-id" />
+                    <input type="text" name="content" id="message-input" placeholder="Tapez votre message..." onkeypress="handleKeyPress(event)" style="flex: 1; background: #1e1f22; border: 1px solid #3a3c41; border-radius: 8px; color: #fff; padding: 10px 12px;" />
+                    <button type="submit" class="btn" style="position: relative; padding: 10px 20px;">
+                        <span id="sending-indicator" class="htmx-indicator">Envoi...</span>
+                        <span>Envoyer</span>
+                    </button>
+                </form>
             </div>
         </main>
     </div>
@@ -493,6 +97,7 @@
         let notificationWs = null;
         let unreadCounts = {};
         let messages = []; // Stocker les messages pour gérer l'affichage des dates
+        let receivedMessageIds = new Set(); // Track des IDs de messages déjà reçus pour éviter les doublons
         
         // Système de notifications
         let notifications = [];
@@ -556,9 +161,90 @@
                 window.__directConvs = directConvs;
                 window.__groupConvs = groupConvs;
                 renderChannels();
+                updateConversationSelect();
             } catch (error) {
                 showNotification('Erreur lors du chargement des conversations', 'error');
             }
+        }
+        
+        // Mettre à jour le sélecteur de conversations dans servers-rail
+        function updateConversationSelect() {
+            const select = document.getElementById('server-conversation-select');
+            if (!select) return;
+            
+            // Récupérer toutes les conversations
+            const allConvs = [...(window.__directConvs || []), ...(window.__groupConvs || [])];
+            
+            // Sauvegarder la valeur actuelle (conversation active)
+            const currentValue = currentConversation || select.value;
+            
+            // Déterminer quelle icône afficher pour la conversation active
+            let activeIcon = '💬';
+            let activeConv = null;
+            if (currentValue) {
+                activeConv = allConvs.find(c => String(c.id) === String(currentValue));
+                if (activeConv) {
+                    if (activeConv.type === 'direct') {
+                        const otherUser = activeConv.memberships?.find(m => m.user.id !== {{ user.id|escapejs }})?.user;
+                        activeIcon = otherUser ? '@' : '💬';
+                    } else {
+                        activeIcon = '#';
+                    }
+                }
+            }
+            
+            // Vider le sélecteur
+            select.innerHTML = '';
+            
+            // Option par défaut avec l'icône de la conversation active
+            const defaultOption = document.createElement('option');
+            defaultOption.value = currentValue || '';
+            defaultOption.textContent = activeIcon;
+            if (currentValue) {
+                defaultOption.selected = true;
+            }
+            select.appendChild(defaultOption);
+            
+            // Ajouter les autres conversations
+            allConvs.forEach(conv => {
+                // Ne pas ajouter la conversation active dans la liste (déjà dans l'option par défaut)
+                if (String(conv.id) === String(currentValue)) {
+                    return;
+                }
+                
+                let displayName = '';
+                if (conv.type === 'direct') {
+                    const otherUser = conv.memberships?.find(m => m.user.id !== {{ user.id|escapejs }})?.user;
+                    displayName = otherUser ? `@ ${otherUser.username}` : `Direct ${conv.id}`;
+                } else {
+                    displayName = `# ${conv.name || `Groupe ${conv.id}`}`;
+                }
+                
+                const option = document.createElement('option');
+                option.value = conv.id;
+                option.textContent = displayName;
+                select.appendChild(option);
+            });
+        }
+        
+        // Sélectionner une conversation depuis le sélecteur
+        function selectConversationFromSelect(conversationId) {
+            if (!conversationId) return;
+            
+            const allConvs = [...(window.__directConvs || []), ...(window.__groupConvs || [])];
+            const conv = allConvs.find(c => c.id == conversationId);
+            
+            if (!conv) return;
+            
+            let title = '';
+            if (conv.type === 'direct') {
+                const otherUser = conv.memberships?.find(m => m.user.id !== {{ user.id|escapejs }})?.user;
+                title = otherUser ? otherUser.username : `Direct ${conv.id}`;
+            } else {
+                title = conv.name || `Groupe ${conv.id}`;
+            }
+            
+            openChat(conversationId, title);
         }
         
         function renderChannels() {
@@ -588,7 +274,7 @@
                     const displayName = otherUser ? otherUser.username : `Direct ${conv.id}`;
                     const item = document.createElement('div');
                     item.className = 'channel-item';
-                    item.innerHTML = `<span>@ ${displayName}</span><span class="badge" id="badge-${conv.id}" style="display:none;">0</span>`;
+                    item.innerHTML = `<span>@ ${displayName}</span><span class="badge" id="badge-${conv.id}" style="display:none;"></span>`;
                     item.onclick = () => openChat(conv.id, displayName);
                     list.appendChild(item);
                 });
@@ -607,7 +293,7 @@
                     const displayName = conv.name || `Groupe ${conv.id}`;
                     const item = document.createElement('div');
                     item.className = 'channel-item';
-                    item.innerHTML = `<span># ${displayName}</span><span class="badge" id="badge-${conv.id}" style="display:none;">0</span>`;
+                    item.innerHTML = `<span># ${displayName}</span><span class="badge" id="badge-${conv.id}" style="display:none;"></span>`;
                     item.onclick = () => openChat(conv.id, displayName);
                     list.appendChild(item);
                 });
@@ -879,10 +565,34 @@
             }
         }
         
-        // Fonctions de chat
+        // Fonction pour obtenir l'ID de conversation actuelle (pour HTMX)
+        function getCurrentConversationId() {
+            return currentConversation || '';
+        }
+        
+        // Fonction pour scroller en bas après le chargement des messages
+        function scrollToBottom() {
+            const container = document.getElementById('chat-messages');
+            if (container) {
+                setTimeout(() => {
+                    container.scrollTop = container.scrollHeight;
+                }, 100);
+            }
+        }
+        
+        // Fonction de chat avec HTMX
         function openChat(conversationId, title) {
             currentConversation = conversationId;
             document.getElementById('main-title').textContent = title;
+            document.getElementById('htmx-conversation-id').value = conversationId;
+            
+            // Mettre à jour le sélecteur pour afficher la conversation active
+            const select = document.getElementById('server-conversation-select');
+            if (select) {
+                select.value = conversationId;
+            }
+            
+            console.log(`[HTMX] Ouverture chat ${conversationId}`);
             
             // Marquer les messages comme lus et mettre à jour les badges
             markConversationAsRead(conversationId);
@@ -892,23 +602,43 @@
                 ws.close();
             }
             
+            // Charger les messages via HTMX
+            htmx.trigger('body', 'loadMessages');
+            
             // Nouvelle connexion WebSocket
             const protocol = window.location.protocol === "https:" ? "wss" : "ws";
             ws = new WebSocket(`${protocol}://${window.location.host}/ws/chat/${conversationId}/`);
             
             ws.onopen = () => {
                 console.log('Connecté au chat');
-                loadMessages();
+                // Les messages sont chargés via HTMX maintenant
             };
             
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data.message) {
+                    const messageId = data.message.id;
+                    const senderId = (data.message.sender && typeof data.message.sender === 'object' && data.message.sender.id) 
+                        ? data.message.sender.id 
+                        : (typeof data.message.sender === 'number' ? data.message.sender : null);
+                    const currentUserId = {{ user.id|escapejs }};
+                    
+                    // Ne pas afficher le message si on l'a déjà reçu (pour éviter les doublons)
+                    if (receivedMessageIds.has(messageId)) {
+                        console.log('[WS] Message', messageId, 'déjà reçu, ignoré');
+                        return;
+                    }
+                    
+                    // Marquer le message comme reçu
+                    receivedMessageIds.add(messageId);
+                    
+                    // Ajouter à la liste et afficher (pour tous les utilisateurs, y compris l'expéditeur)
                     messages.push(data.message);
                     const prevMsg = messages.length > 1 ? messages[messages.length - 2] : null;
                     displayMessage(data.message, prevMsg);
+                    
                     // Mettre à jour le badge de la conversation si on n'est pas dans cette conversation
-                    if (data.message.sender !== {{ user.id|escapejs }} && currentConversation !== conversationId) {
+                    if (senderId !== currentUserId && currentConversation !== conversationId) {
                         updateConversationBadge(conversationId, true);
                     }
                 } else if (data.error) {
@@ -919,12 +649,27 @@
             ws.onclose = () => {
                 console.log('Déconnecté du chat');
             };
+            
+            // Mettre à jour le sélecteur après ouverture
+            updateConversationSelect();
+        }
+        
+        // Gérer la soumission HTMX
+        function handleHtmxSubmit(event) {
+            const conversationId = document.getElementById('htmx-conversation-id').value;
+            if (!conversationId) {
+                event.preventDefault();
+                showNotification('Sélectionnez une conversation', 'error');
+                return false;
+            }
+            return true;
         }
         
         function closeChat() {
             if (ws) { ws.close(); ws = null; }
             currentConversation = null;
             messages = []; // Réinitialiser les messages
+            receivedMessageIds.clear(); // Réinitialiser les IDs reçus
             document.getElementById('main-title').textContent = 'Sélectionnez une conversation';
             document.getElementById('chat-messages').innerHTML = '';
         }
@@ -937,6 +682,14 @@
                 });
                 const loadedMessages = await res.json();
                 messages = loadedMessages;
+                
+                // Marquer tous les messages chargés comme reçus pour éviter les doublons
+                receivedMessageIds.clear();
+                loadedMessages.forEach(msg => {
+                    if (msg.id) {
+                        receivedMessageIds.add(msg.id);
+                    }
+                });
                 
             const container = document.getElementById('chat-messages');
                 container.innerHTML = '';
@@ -1030,16 +783,29 @@
                     // La diffusion temps réel arrivera via WebSocket (broadcast côté serveur)
                     input.value = '';
                     fileInput.value = '';
+                    // Recharger les messages via HTMX après envoi
+                    htmx.trigger('body', 'loadMessages');
                 } catch (e) {
                     showNotification('Erreur réseau lors de l\'upload', 'error');
                 }
                 return;
             }
 
-            // Sinon, on garde le flux WebSocket pour le texte seul
-            if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
-            ws.send(JSON.stringify({message}));
-            input.value = '';
+            // Pour le texte, on peut utiliser HTMX ou WebSocket
+            // On garde WebSocket pour la diffusion temps réel, mais on peut aussi utiliser HTMX
+            if (!message) return;
+            
+            // Option 1: Utiliser HTMX pour envoyer le message
+            const form = document.getElementById('message-form');
+            if (form && message) {
+                // HTMX va gérer l'envoi automatiquement via le formulaire
+                // On ne fait rien ici, HTMX s'en occupe
+            } else {
+                // Fallback WebSocket
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                ws.send(JSON.stringify({message}));
+                input.value = '';
+            }
         }
         
         function handleKeyPress(event) {
@@ -1082,6 +848,12 @@
         
         // Récupérer le token CSRF au chargement
         document.addEventListener('DOMContentLoaded', function() {
+            // Cacher le popup de notification au démarrage
+            const popup = document.getElementById('notification-popup');
+            if (popup) {
+                popup.style.display = 'none';
+            }
+            
             getCSRFToken();
             loadConversations();
             loadUnreadCounts();
@@ -1351,33 +1123,46 @@
         // Configuration du WebSocket pour les notifications
         function setupNotificationWebSocket() {
             const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-            notificationWs = new WebSocket(`${protocol}://${window.location.host}/ws/notifications/`);
+            const wsUrl = `${protocol}://${window.location.host}/ws/notifications/`;
+            console.log('[NOTIFICATIONS] Tentative de connexion WebSocket notifications:', wsUrl);
+            notificationWs = new WebSocket(wsUrl);
             
             notificationWs.onopen = () => {
+                console.log('[NOTIFICATIONS] ✅ Connecté au WebSocket notifications');
             };
             
             notificationWs.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                
-                if (data.type === 'notification') {
-                    const notification = data.notification;
-                    // Ajouter la notification à la liste locale
-                    notifications.unshift(notification);
-                    updateNotificationUI();
+                console.log('[NOTIFICATIONS] Message reçu:', event.data);
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('[NOTIFICATIONS] Données parsées:', data);
                     
-                    // Afficher le popup
-                    showNotificationPopup(notification);
+                    if (data.type === 'notification') {
+                        const notification = data.notification;
+                        console.log('[NOTIFICATIONS] Notification reçue:', notification);
+                        // Ajouter la notification à la liste locale
+                        notifications.unshift(notification);
+                        updateNotificationUI();
+                        
+                        // Afficher le popup
+                        showNotificationPopup(notification);
+                    } else {
+                        console.log('[NOTIFICATIONS] Type de message inconnu:', data.type);
+                    }
+                } catch (error) {
+                    console.error('[NOTIFICATIONS] Erreur parsing message:', error, event.data);
                 }
             };
             
             notificationWs.onerror = (error) => {
-                console.error('Erreur WebSocket des notifications:', error);
+                console.error('[NOTIFICATIONS] ❌ Erreur WebSocket des notifications:', error);
             };
             
-            notificationWs.onclose = () => {
-                console.log('Déconnecté du WebSocket des notifications');
+            notificationWs.onclose = (event) => {
+                console.log('[NOTIFICATIONS] Déconnecté du WebSocket des notifications, code:', event.code, 'reason:', event.reason);
                 // Reconnexion automatique après 5 secondes
                 setTimeout(() => {
+                    console.log('[NOTIFICATIONS] Tentative de reconnexion...');
                     setupNotificationWebSocket();
                 }, 5000);
             };
@@ -1450,8 +1235,15 @@
             
             // Vérifier que les éléments existent
             if (!countElement || !tabElement || !dropdownElement) {
+                console.log('[NOTIFICATIONS] Éléments UI introuvables:', {
+                    countElement: !!countElement,
+                    tabElement: !!tabElement,
+                    dropdownElement: !!dropdownElement
+                });
                 return;
             }
+            
+            console.log('[NOTIFICATIONS] Mise à jour UI avec', notifications.length, 'notifications,', unreadCount, 'non lues');
             
             // Mettre à jour le compteur
             if (unreadCount > 0) {
@@ -1509,6 +1301,7 @@
         
         // Afficher le popup de notification
         function showNotificationPopup(notification) {
+            console.log('[NOTIFICATIONS] showNotificationPopup appelé avec:', notification);
             const popup = document.getElementById('notification-popup');
             const title = document.getElementById('popup-title');
             const body = document.getElementById('popup-body');
@@ -1516,11 +1309,17 @@
             const actionBtn = document.getElementById('popup-action-btn');
             
             if (!popup || !title || !body) {
+                console.error('[NOTIFICATIONS] Éléments popup introuvables:', {
+                    popup: !!popup,
+                    title: !!title,
+                    body: !!body
+                });
                 return;
             }
             
-            title.textContent = notification.title;
-            body.textContent = notification.content;
+            console.log('[NOTIFICATIONS] Popup trouvé, mise à jour du contenu');
+            title.textContent = notification.title || 'Notification';
+            body.textContent = notification.content || '';
             
             if (notification.action) {
                 if (actionBtn && actions) {
@@ -1550,13 +1349,15 @@
         // Fermer le popup de notification
         function closeNotificationPopup() {
             const popup = document.getElementById('notification-popup');
-            popup.classList.remove('show');
-            popup.classList.add('hide');
-            
-            setTimeout(() => {
-                popup.classList.remove('hide');
-                popup.style.display = 'none';
-            }, 300);
+            if (popup) {
+                popup.classList.remove('show');
+                popup.classList.add('hide');
+                
+                setTimeout(() => {
+                    popup.classList.remove('hide');
+                    popup.style.display = 'none';
+                }, 300);
+            }
         }
         
         // Basculer le dropdown des notifications
@@ -1748,7 +1549,7 @@
                 const count = unreadCounts[conversationId] || 0;
                 if (count > 0) {
                     badge.textContent = count;
-                    badge.style.display = 'inline-block';
+                    badge.style.display = 'inline-flex';
                 } else {
                     badge.style.display = 'none';
                 }
